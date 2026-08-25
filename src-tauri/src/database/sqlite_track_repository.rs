@@ -10,6 +10,7 @@ use crate::{
 const MIGRATION_0001: &str = include_str!("migrations/0001_tracks.sql");
 const MIGRATION_0002: &str = include_str!("migrations/0002_track_actions.sql");
 const MIGRATION_0003: &str = include_str!("migrations/0003_playlist_details.sql");
+const MIGRATION_0004: &str = include_str!("migrations/0004_download_origins.sql");
 
 pub struct SqliteTrackRepository {
     pub(crate) connection: Connection,
@@ -44,6 +45,9 @@ impl SqliteTrackRepository {
         if version < 3 {
             transaction.execute_batch(MIGRATION_0003)?;
         }
+        if version < 4 {
+            transaction.execute_batch(MIGRATION_0004)?;
+        }
         transaction.commit()?;
         Ok(Self { connection })
     }
@@ -64,6 +68,8 @@ impl SqliteTrackRepository {
             source_type: SourceType::parse(&source_type_value)
                 .map_err(|_| parse_error(source_type_value))?,
             source_uri: row.get("source_uri")?,
+            source_page_url: row.get("source_page_url")?,
+            external_id: row.get("external_id")?,
             title: row.get("title")?,
             artist: row.get("artist")?,
             album: row.get("album")?,
@@ -89,19 +95,20 @@ impl SqliteTrackRepository {
 impl TrackRepository for SqliteTrackRepository {
     fn upsert(&mut self, track: &Track) -> AppResult<Track> {
         self.connection.execute(
-            "INSERT INTO tracks (id, source_type, source_uri, title, artist, album, duration_ms, artwork_uri, mime_type, file_size, track_number, disc_number, year, genre, added_at, updated_at, last_played_at, play_count, favorite, availability)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+            "INSERT INTO tracks (id, source_type, source_uri, source_page_url, external_id, title, artist, album, duration_ms, artwork_uri, mime_type, file_size, track_number, disc_number, year, genre, added_at, updated_at, last_played_at, play_count, favorite, availability)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
              ON CONFLICT(source_type, source_uri) DO UPDATE SET
+               source_page_url = excluded.source_page_url, external_id = excluded.external_id,
                title = excluded.title, artist = excluded.artist, album = excluded.album,
                duration_ms = excluded.duration_ms, artwork_uri = excluded.artwork_uri,
                mime_type = excluded.mime_type, file_size = excluded.file_size,
                track_number = excluded.track_number, disc_number = excluded.disc_number,
                year = excluded.year, genre = excluded.genre, updated_at = excluded.updated_at,
                availability = excluded.availability",
-            params![track.id, track.source_type.as_str(), track.source_uri, track.title, track.artist, track.album,
-                track.duration_ms, track.artwork_uri, track.mime_type, track.file_size, track.track_number,
-                track.disc_number, track.year, track.genre, track.added_at, track.updated_at,
-                track.last_played_at, track.play_count, track.favorite, track.availability.as_str()],
+            params![track.id, track.source_type.as_str(), track.source_uri, track.source_page_url, track.external_id,
+                track.title, track.artist, track.album, track.duration_ms, track.artwork_uri, track.mime_type,
+                track.file_size, track.track_number, track.disc_number, track.year, track.genre, track.added_at,
+                track.updated_at, track.last_played_at, track.play_count, track.favorite, track.availability.as_str()],
         )?;
 
         self.connection
@@ -212,6 +219,8 @@ mod tests {
         NewTrack {
             source_type: SourceType::LocalDocument,
             source_uri: uri.into(),
+            source_page_url: None,
+            external_id: None,
             title: Some(title.into()),
             file_name: None,
             artist: Some("Artist".into()),
@@ -319,7 +328,7 @@ mod tests {
                 |row| row.get(0),
             )
             .expect("column");
-        assert_eq!(version, 3);
+        assert_eq!(version, 4);
         assert_eq!(sort_mode, "'custom'");
     }
 }

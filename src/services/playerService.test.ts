@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPlayerService, shouldInitializeQueue } from './playerService';
+import { calculatePlaybackProgress, createPlayerService, shouldInitializeQueue } from './playerService';
 
 describe('playerService', () => {
+  it('calculates and clamps the mini-player progress', () => {
+    expect(calculatePlaybackProgress(30, 120)).toBe(25);
+    expect(calculatePlaybackProgress(-5, 120)).toBe(0);
+    expect(calculatePlaybackProgress(150, 120)).toBe(100);
+    expect(calculatePlaybackProgress(10, 0)).toBe(0);
+  });
+
   it('maps queue and seek commands to the native contract', async () => {
     const invoke = vi.fn().mockResolvedValue({ status: 'paused' });
     const service = createPlayerService(invoke);

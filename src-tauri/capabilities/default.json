@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Capacidades básicas do Rigbyfy",
   "windows": ["main"],
-  "permissions": ["core:default", "media-source:default", "media-player:default"]
+  "permissions": ["core:default", "media-source:default", "media-player:default", "media-downloader:default"]
 }

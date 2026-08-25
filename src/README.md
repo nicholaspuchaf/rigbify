@@ -27,7 +27,7 @@ screens ─────► services ─────► @tauri-apps/api ───
 ### Arquivos raiz
 
 - `main.ts`: ponto de entrada. Monta `App` no elemento raiz e registra `/sw.js` somente em produção.
-- `App.svelte`: composição principal e coordenador da navegação. Mantém tela atual, faixa ativa, origem da fila, atualização da biblioteca e abertura dos fluxos de playlist/player.
+- `App.svelte`: composição principal e coordenador da navegação. Mantém tela atual, histórico interno compatível com o botão Voltar do Android, faixa ativa, origem da fila, atualização da biblioteca e abertura dos fluxos de playlist/player.
 - `style.css`: tokens visuais globais, reset, base tipográfica, cores, superfícies, largura mobile e utilitários compartilhados. Evite colocar aqui estilo exclusivo de uma única tela.
 - `vite-env.d.ts`: tipos de ambiente fornecidos pelo Vite.
 
@@ -41,7 +41,7 @@ Componentes reutilizáveis e predominantemente apresentacionais:
 - `ChipBar.svelte`: filtros/atalhos horizontais selecionáveis.
 - `CollectionCard.svelte`: card de álbum, playlist ou coleção.
 - `Icon.svelte`: catálogo SVG centralizado; novos ícones devem entrar aqui em vez de SVG duplicado.
-- `MiniPlayer.svelte`: resumo persistente da faixa e controles essenciais.
+- `MiniPlayer.svelte`: resumo persistente da faixa, play/pause e progresso sincronizado com o player.
 - `ScreenHeader.svelte`: cabeçalho reutilizável, incluindo retorno e ações.
 - `SectionHeading.svelte`: título e ação opcional de seção.
 - `SettingRow.svelte`: linha consistente de configuração.
@@ -54,10 +54,10 @@ Regra: componentes recebem dados por props e comunicam intenções por callbacks
 
 Telas coordenam componentes e casos de uso:
 
-- `HomeScreen.svelte`: saudação, filtros, coleções, recomendações e acesso à reprodução.
+- `HomeScreen.svelte`: saudação, filtros, coleções navegáveis, recomendações e acesso à reprodução.
 - `SearchScreen.svelte`: termo de busca, resultados e descoberta visual.
 - `LibraryScreen.svelte`: importação, filtros da biblioteca, ações de faixa e entrada para playlists.
-- `PlaylistScreen.svelte`: detalhe, ações administrativas, ordenação, reordenação, remoção e reprodução da playlist.
+- `PlaylistScreen.svelte`: detalhe, ações administrativas, ordenação, reordenação, remoção e play/pause sincronizado da playlist.
 - `PlaylistAddScreen.svelte`: busca, filtros e inclusão imediata de músicas, com progresso, erro contextual e conclusão do fluxo.
 - `PlaylistEditScreen.svelte`: nome, descrição e referência de capa.
 - `PlayerScreen.svelte`: faixa ativa, progresso, controles nativos, fila e menu compartilhado.

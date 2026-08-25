@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-get-download-status"
+description = "Enables the get_download_status command without any pre-configured scope."
+commands.allow = ["get_download_status"]
+
+[[permission]]
+identifier = "deny-get-download-status"
+description = "Denies the get_download_status command without any pre-configured scope."
+commands.deny = ["get_download_status"]

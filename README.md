@@ -47,6 +47,7 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 
 - Telas Home, Busca, Biblioteca, Playlist, Adicionar músicas, Editar playlist, Player e Configurações.
 - Navegação inferior, mini player, cards, linhas de música e menu de ações reutilizáveis.
+- Histórico interno integrado ao botão/gesto Voltar do Android; o app só é encerrado quando a Home é a raiz ativa.
 - Layout escuro, mobile-first, inspirado nas referências de [`design/`](design/README.md).
 - Service Worker simples para o shell web em builds de produção.
 

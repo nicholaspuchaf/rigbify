@@ -1,4 +1,4 @@
-export type View = 'home' | 'search' | 'library' | 'settings' | 'player' | 'playlist' | 'playlist-add' | 'playlist-edit';
+export type View = 'home' | 'search' | 'library' | 'settings' | 'player' | 'playlist' | 'playlist-add' | 'playlist-edit' | 'downloads';
 
 export type Track = {
   id: string;

@@ -11,7 +11,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
 default = ["app"]
-app = ["dep:tauri", "dep:tauri-plugin-media-source", "dep:tauri-plugin-media-player"]
+app = ["dep:tauri", "dep:tauri-plugin-media-source", "dep:tauri-plugin-media-player", "dep:tauri-plugin-media-downloader"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -23,5 +23,7 @@ serde_json = "1"
 tauri = { version = "2", features = [], optional = true }
 tauri-plugin-media-source = { path = "../plugins/media-source", optional = true }
 tauri-plugin-media-player = { path = "../plugins/media-player", optional = true }
+tauri-plugin-media-downloader = { path = "../plugins/media-downloader", optional = true }
 thiserror = "2"
+url = "2"
 uuid = { version = "1", features = ["v4"] }
