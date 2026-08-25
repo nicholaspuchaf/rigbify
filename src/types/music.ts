@@ -8,6 +8,8 @@ export type Track = {
   duration: number;
   hue: number;
   favorite?: boolean;
+  sourceUri?: string;
+  artworkUri?: string;
 };
 
 export type Collection = {

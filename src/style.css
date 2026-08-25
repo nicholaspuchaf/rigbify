@@ -65,6 +65,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lime); outl
 .feature-mark { display: grid; width: 45px; height: 45px; margin-bottom: 65px; place-items: center; border-radius: 50%; color: #10120a; background: var(--lime); font-size: 20px; font-weight: 800; }
 .feature-card small { color: #d8d8da; font-size: 9px; font-weight: 800; letter-spacing: 1.5px; }.feature-card h3 { margin: 5px 0; font-size: 21px; }.feature-card p { margin: 0; color: #c0c0c4; font-size: 11px; }
 .continue-card { display: flex; min-height: 170px; align-items: end; justify-content: space-between; margin-top: 40px; padding: 25px; border: 1px solid #343525; border-radius: 18px; background: radial-gradient(circle at 75% 10%, #434d20, transparent 34%), linear-gradient(120deg, #191a16, #101011); }
+.import-banner { display: flex; width: 100%; align-items: center; justify-content: space-between; margin-top: 35px; padding: 18px 20px; border: 1px dashed #4a4b3a; border-radius: 14px; background: #171811; text-align: left; }.import-banner b,.import-banner small { display: block; }.import-banner b { font-size: 14px; }.import-banner small { margin-top: 4px; color: var(--muted); font-size: 10px; }.import-banner strong { color: var(--lime); font-size: 25px; }
 .continue-card h2 { margin: 7px 0 4px; font-size: 28px; }.continue-card p { margin: 0; color: var(--muted); font-size: 12px; }
 .continue-card button { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 50%; color: #111; background: var(--lime); font-size: 20px; }
 

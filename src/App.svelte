@@ -1,17 +1,27 @@
 <script lang="ts">
-  import type { Track, View } from './types/music'; import { collections, tracks as initialTracks } from './data/mock';
+  import { onMount } from 'svelte'; import type { Track, View } from './types/music'; import type { NativeQueueTrack, PlayerSnapshot } from './types/player'; import { collections, tracks as initialTracks } from './data/mock'; import { libraryService } from './services/libraryService'; import { playerService, shouldInitializeQueue } from './services/playerService'; import { toUiTrack } from './services/trackMapper';
   import HomeScreen from './screens/HomeScreen.svelte'; import SearchScreen from './screens/SearchScreen.svelte'; import LibraryScreen from './screens/LibraryScreen.svelte'; import SettingsScreen from './screens/SettingsScreen.svelte'; import PlayerScreen from './screens/PlayerScreen.svelte'; import MiniPlayer from './components/MiniPlayer.svelte'; import BottomNavigation from './components/BottomNavigation.svelte';
-  let view: View = 'home'; let previousView: View = 'home'; let tracks = initialTracks; let current = tracks[0]; let playing = false;
+  let view: View = 'home'; let previousView: View = 'home'; let tracks = initialTracks; let current = tracks[0]; let playing = false; let position = 0; let nativeLibrary = false; let nativePlayer = false; let playerState: PlayerSnapshot | null = null;
+  onMount(() => {
+    let active = true;
+    void (async () => { try { const stored = await libraryService.listTracks(); if (!active) return; nativeLibrary = true; if (stored.length > 0) { tracks = stored.map(toUiTrack); current = tracks[0]; } } catch { nativeLibrary = false; } })();
+    const timer = window.setInterval(() => { if (nativePlayer) void playerService.getState().then(syncPlayer).catch(() => { nativePlayer = false; }); }, 1_000);
+    return () => { active = false; window.clearInterval(timer); };
+  });
   function navigate(next: View) { view = next; }
   function openSettings() { previousView = view; view = 'settings'; }
   function openPlayer() { previousView = view; view = 'player'; }
-  function play(track: Track) { current = track; playing = true; }
-  function toggle() { playing = !playing; }
-  function step(direction: number) { const index = tracks.findIndex((track) => track.id === current.id); current = tracks[(index + direction + tracks.length) % tracks.length]; playing = true; }
-  function favorite(track: Track) { tracks = tracks.map((item) => item.id === track.id ? { ...item, favorite: !item.favorite } : item); current = tracks.find((item) => item.id === current.id) ?? current; }
+  function nativeQueue(): NativeQueueTrack[] { return tracks.filter((track): track is Track & { sourceUri: string } => Boolean(track.sourceUri)).map(({ id, sourceUri, title, artist, album, artworkUri }) => ({ id, sourceUri, title, artist, album, artworkUri })); }
+  function syncPlayer(state: PlayerSnapshot) { nativePlayer = true; playerState = state; playing = state.isPlaying; position = Math.round(state.positionMs / 1_000); const selected = tracks.find((track) => track.id === state.currentTrackId); if (selected) current = selected; }
+  async function play(track: Track) { current = track; position = 0; const queue = nativeQueue(); const index = queue.findIndex((item) => item.id === track.id); if (index < 0) { playing = true; return; } try { syncPlayer(await playerService.setQueue(queue, index)); syncPlayer(await playerService.play()); } catch { nativePlayer = false; playing = false; } }
+  async function toggle() { if (!current.sourceUri) { playing = !playing; return; } try { if (playing) { syncPlayer(await playerService.pause()); return; } if (shouldInitializeQueue(playerState, current.id)) { const queue = nativeQueue(); const index = queue.findIndex((item) => item.id === current.id); if (index < 0) return; syncPlayer(await playerService.setQueue(queue, index)); } syncPlayer(await playerService.play()); } catch { nativePlayer = false; playerState = null; } }
+  async function step(direction: number) { if (nativePlayer) { try { syncPlayer(direction > 0 ? await playerService.skipNext() : await playerService.skipPrevious()); return; } catch { nativePlayer = false; } } const index = tracks.findIndex((track) => track.id === current.id); current = tracks[(index + direction + tracks.length) % tracks.length]; playing = true; }
+  async function seek(seconds: number) { position = seconds; if (nativePlayer) { try { syncPlayer(await playerService.seekTo(seconds * 1_000)); } catch { nativePlayer = false; } } }
+  async function importFromDevice() { try { const imported = await libraryService.importFromDevice(); if (imported.length > 0) { const stored = await libraryService.listTracks(); tracks = stored.map(toUiTrack); current = toUiTrack(imported[0]); nativeLibrary = true; view = 'library'; } } catch { nativeLibrary = false; } }
+  async function favorite(track: Track) { const favorite = !track.favorite; tracks = tracks.map((item) => item.id === track.id ? { ...item, favorite } : item); current = tracks.find((item) => item.id === current.id) ?? current; if (nativeLibrary) { try { await libraryService.setFavorite(track.id, favorite); } catch { tracks = tracks.map((item) => item.id === track.id ? { ...item, favorite: !favorite } : item); current = tracks.find((item) => item.id === current.id) ?? current; } } }
 </script>
 
-{#if view === 'player'}<PlayerScreen track={current} {playing} onback={() => view = previousView} ontoggle={toggle} onnext={() => step(1)} onprevious={() => step(-1)} onfavorite={favorite} />
-{:else}<div class="app-shell">{#if view === 'home'}<HomeScreen {tracks} {collections} {current} onplay={play} onfavorite={favorite} onsettings={openSettings} />{:else if view === 'search'}<SearchScreen {tracks} {current} onplay={play} onfavorite={favorite} onsettings={openSettings} />{:else if view === 'library'}<LibraryScreen {tracks} {collections} {current} onplay={play} onfavorite={favorite} onsettings={openSettings} />{:else}<SettingsScreen onback={() => view = previousView} />{/if}</div>
+{#if view === 'player'}<PlayerScreen track={current} {playing} {position} onback={() => view = previousView} ontoggle={toggle} onnext={() => step(1)} onprevious={() => step(-1)} onseek={seek} onfavorite={favorite} />
+{:else}<div class="app-shell">{#if view === 'home'}<HomeScreen {tracks} {collections} {current} onplay={play} onfavorite={favorite} onsettings={openSettings} onadd={importFromDevice} />{:else if view === 'search'}<SearchScreen {tracks} {current} onplay={play} onfavorite={favorite} onsettings={openSettings} />{:else if view === 'library'}<LibraryScreen {tracks} {collections} {current} onplay={play} onfavorite={favorite} onsettings={openSettings} onadd={importFromDevice} />{:else}<SettingsScreen onback={() => view = previousView} />{/if}</div>
   <MiniPlayer track={current} {playing} onopen={openPlayer} ontoggle={toggle} /><BottomNavigation active={view} {navigate} />
 {/if}

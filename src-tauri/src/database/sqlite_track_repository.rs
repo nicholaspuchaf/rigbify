@@ -1,0 +1,206 @@
+use std::path::Path;
+
+use rusqlite::{params, Connection, OptionalExtension, Row};
+
+use crate::{
+    errors::{AppError, AppResult},
+    media::{Availability, SourceType, Track, TrackRepository},
+};
+
+const MIGRATION_0001: &str = include_str!("migrations/0001_tracks.sql");
+
+pub struct SqliteTrackRepository {
+    connection: Connection,
+}
+
+impl SqliteTrackRepository {
+    pub fn open(path: &Path) -> AppResult<Self> {
+        let connection = Connection::open(path)?;
+        Self::from_connection(connection)
+    }
+
+    pub fn in_memory() -> AppResult<Self> {
+        Self::from_connection(Connection::open_in_memory()?)
+    }
+
+    fn from_connection(mut connection: Connection) -> AppResult<Self> {
+        connection.pragma_update(None, "foreign_keys", "ON")?;
+        connection.pragma_update(None, "journal_mode", "WAL")?;
+        let transaction = connection.transaction()?;
+        transaction.execute_batch(MIGRATION_0001)?;
+        transaction.commit()?;
+        Ok(Self { connection })
+    }
+
+    fn read_track(row: &Row<'_>) -> rusqlite::Result<Track> {
+        let source_type_value: String = row.get("source_type")?;
+        let availability_value: String = row.get("availability")?;
+        let parse_error = |value: String| {
+            rusqlite::Error::FromSqlConversionFailure(
+                0,
+                rusqlite::types::Type::Text,
+                Box::new(AppError::InvalidTrack(value)),
+            )
+        };
+
+        Ok(Track {
+            id: row.get("id")?,
+            source_type: SourceType::parse(&source_type_value)
+                .map_err(|_| parse_error(source_type_value))?,
+            source_uri: row.get("source_uri")?,
+            title: row.get("title")?,
+            artist: row.get("artist")?,
+            album: row.get("album")?,
+            duration_ms: row.get("duration_ms")?,
+            artwork_uri: row.get("artwork_uri")?,
+            mime_type: row.get("mime_type")?,
+            file_size: row.get("file_size")?,
+            track_number: row.get("track_number")?,
+            disc_number: row.get("disc_number")?,
+            year: row.get("year")?,
+            genre: row.get("genre")?,
+            added_at: row.get("added_at")?,
+            updated_at: row.get("updated_at")?,
+            last_played_at: row.get("last_played_at")?,
+            play_count: row.get("play_count")?,
+            favorite: row.get("favorite")?,
+            availability: Availability::parse(&availability_value)
+                .map_err(|_| parse_error(availability_value))?,
+        })
+    }
+}
+
+impl TrackRepository for SqliteTrackRepository {
+    fn upsert(&mut self, track: &Track) -> AppResult<Track> {
+        self.connection.execute(
+            "INSERT INTO tracks (id, source_type, source_uri, title, artist, album, duration_ms, artwork_uri, mime_type, file_size, track_number, disc_number, year, genre, added_at, updated_at, last_played_at, play_count, favorite, availability)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+             ON CONFLICT(source_type, source_uri) DO UPDATE SET
+               title = excluded.title, artist = excluded.artist, album = excluded.album,
+               duration_ms = excluded.duration_ms, artwork_uri = excluded.artwork_uri,
+               mime_type = excluded.mime_type, file_size = excluded.file_size,
+               track_number = excluded.track_number, disc_number = excluded.disc_number,
+               year = excluded.year, genre = excluded.genre, updated_at = excluded.updated_at,
+               availability = excluded.availability",
+            params![track.id, track.source_type.as_str(), track.source_uri, track.title, track.artist, track.album,
+                track.duration_ms, track.artwork_uri, track.mime_type, track.file_size, track.track_number,
+                track.disc_number, track.year, track.genre, track.added_at, track.updated_at,
+                track.last_played_at, track.play_count, track.favorite, track.availability.as_str()],
+        )?;
+
+        self.connection
+            .query_row(
+                "SELECT * FROM tracks WHERE source_type = ?1 AND source_uri = ?2",
+                params![track.source_type.as_str(), track.source_uri],
+                Self::read_track,
+            )
+            .map_err(Into::into)
+    }
+
+    fn list(&self) -> AppResult<Vec<Track>> {
+        let mut statement = self
+            .connection
+            .prepare("SELECT * FROM tracks ORDER BY added_at DESC, title COLLATE NOCASE")?;
+        let tracks = statement
+            .query_map([], Self::read_track)?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(tracks)
+    }
+
+    fn find_by_id(&self, id: &str) -> AppResult<Option<Track>> {
+        self.connection
+            .query_row("SELECT * FROM tracks WHERE id = ?1", [id], Self::read_track)
+            .optional()
+            .map_err(Into::into)
+    }
+
+    fn set_favorite(&mut self, id: &str, favorite: bool, updated_at: i64) -> AppResult<Track> {
+        let changed = self.connection.execute(
+            "UPDATE tracks SET favorite = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, favorite, updated_at],
+        )?;
+        if changed == 0 {
+            return Err(AppError::TrackNotFound);
+        }
+        self.find_by_id(id)?.ok_or(AppError::TrackNotFound)
+    }
+
+    fn remove(&mut self, id: &str) -> AppResult<()> {
+        let changed = self
+            .connection
+            .execute("DELETE FROM tracks WHERE id = ?1", [id])?;
+        if changed == 0 {
+            return Err(AppError::TrackNotFound);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::media::NewTrack;
+
+    fn track(uri: &str, title: &str, now: i64) -> Track {
+        NewTrack {
+            source_type: SourceType::LocalDocument,
+            source_uri: uri.into(),
+            title: Some(title.into()),
+            file_name: None,
+            artist: Some("Artist".into()),
+            album: Some("Album".into()),
+            duration_ms: 120_000,
+            artwork_uri: None,
+            mime_type: Some("audio/mpeg".into()),
+            file_size: Some(10),
+            track_number: None,
+            disc_number: None,
+            year: None,
+            genre: None,
+        }
+        .normalize(now)
+        .expect("valid fixture")
+    }
+
+    #[test]
+    fn persists_and_lists_tracks() {
+        let mut repository = SqliteTrackRepository::in_memory().expect("database");
+        repository
+            .upsert(&track("content://1", "First", 1))
+            .expect("insert");
+        repository
+            .upsert(&track("content://2", "Second", 2))
+            .expect("insert");
+        let tracks = repository.list().expect("list");
+        assert_eq!(tracks.len(), 2);
+        assert_eq!(tracks[0].title, "Second");
+    }
+
+    #[test]
+    fn deduplicates_by_source_and_uri_while_preserving_id() {
+        let mut repository = SqliteTrackRepository::in_memory().expect("database");
+        let first = repository
+            .upsert(&track("content://same", "Old", 1))
+            .expect("insert");
+        let updated = repository
+            .upsert(&track("content://same", "New", 2))
+            .expect("update");
+        assert_eq!(updated.id, first.id);
+        assert_eq!(updated.title, "New");
+        assert_eq!(repository.list().expect("list").len(), 1);
+    }
+
+    #[test]
+    fn updates_favorite_and_removes_track() {
+        let mut repository = SqliteTrackRepository::in_memory().expect("database");
+        let saved = repository
+            .upsert(&track("content://1", "First", 1))
+            .expect("insert");
+        let favorite = repository
+            .set_favorite(&saved.id, true, 3)
+            .expect("favorite");
+        assert!(favorite.favorite);
+        repository.remove(&saved.id).expect("remove");
+        assert!(repository.list().expect("list").is_empty());
+    }
+}

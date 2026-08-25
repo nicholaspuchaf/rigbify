@@ -7,6 +7,6 @@
 </script>
 <div class="screen"><ScreenHeader title="Buscar" {onsettings} />
   <label class="search-field"><Icon name="search" size={25} /><span class="sr-only">Buscar músicas, artistas ou álbuns</span><input bind:value={query} placeholder="O que você quer ouvir?" />{#if query}<button onclick={() => query = ''} aria-label="Limpar busca">×</button>{/if}</label>
-  {#if query}<section><SectionHeading title="Resultados" action={`${results.length} encontrados`} />{#each results as track}<TrackRow {track} active={current.id === track.id} {onplay} {onfavorite} />{:else}<div class="empty-state"><Icon name="search" size={34} /><h2>Nada por aqui</h2><p>Tente buscar outro título, artista ou álbum.</p></div>{/each}</section>
-  {:else}<section><SectionHeading title="Explore sua biblioteca" /><div class="category-grid">{#each categories as category}<button class="category-card" style={`--category-hue:${category.hue}`}><b>{category.name}</b><span><Icon name="music" size={29} /></span></button>{/each}</div></section>{/if}
+  {#if query}<section><SectionHeading title="Resultados" action={`${results.length} encontrados`} />{#each results as track (track.id)}<TrackRow {track} active={current.id === track.id} {onplay} {onfavorite} />{:else}<div class="empty-state"><Icon name="search" size={34} /><h2>Nada por aqui</h2><p>Tente buscar outro título, artista ou álbum.</p></div>{/each}</section>
+  {:else}<section><SectionHeading title="Explore sua biblioteca" /><div class="category-grid">{#each categories as category (category.name)}<button class="category-card" style={`--category-hue:${category.hue}`}><b>{category.name}</b><span><Icon name="music" size={29} /></span></button>{/each}</div></section>{/if}
 </div>

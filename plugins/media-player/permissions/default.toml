@@ -1,0 +1,6 @@
+[default]
+description = "Default permissions for the plugin"
+permissions = [
+  "allow-set-queue", "allow-play", "allow-pause", "allow-seek-to",
+  "allow-skip-next", "allow-skip-previous", "allow-stop", "allow-get-state"
+]

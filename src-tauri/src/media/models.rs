@@ -55,7 +55,9 @@ impl Availability {
             "missing" => Ok(Self::Missing),
             "downloading" => Ok(Self::Downloading),
             "failed" => Ok(Self::Failed),
-            _ => Err(AppError::InvalidTrack("disponibilidade desconhecida".into())),
+            _ => Err(AppError::InvalidTrack(
+                "disponibilidade desconhecida".into(),
+            )),
         }
     }
 }
@@ -114,9 +116,7 @@ impl NewTrack {
             .unwrap_or_else(|| "Música desconhecida".to_string());
 
         if self.duration_ms > 24 * 60 * 60 * 1_000 {
-            return Err(AppError::InvalidTrack(
-                "duração maior que 24 horas".into(),
-            ));
+            return Err(AppError::InvalidTrack("duração maior que 24 horas".into()));
         }
 
         Ok(Track {
@@ -149,12 +149,20 @@ fn required_text(value: String, field: &str) -> AppResult<String> {
 }
 
 fn clean_optional(value: Option<String>) -> Option<String> {
-    value.map(|text| text.trim().to_string()).filter(|text| !text.is_empty())
+    value
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
 }
 
 fn title_from_file_name(file_name: &str) -> String {
-    let without_extension = file_name.rsplit_once('.').map_or(file_name, |(name, _)| name);
-    without_extension.replace(['_', '-'], " ").split_whitespace().collect::<Vec<_>>().join(" ")
+    let without_extension = file_name
+        .rsplit_once('.')
+        .map_or(file_name, |(name, _)| name);
+    without_extension
+        .replace(['_', '-'], " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[cfg(test)]

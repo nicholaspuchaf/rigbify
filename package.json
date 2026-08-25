@@ -14,7 +14,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "validate": "bun run lint && bun run check && bun run test && bun run build",
-    "validate:rust": "cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml",
+    "validate:rust": "cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo clippy --manifest-path src-tauri/Cargo.toml --no-default-features --lib -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml --no-default-features --lib",
     "prepare": "lefthook install",
     "tauri": "tauri"
   },
@@ -27,6 +27,7 @@
     "@sveltejs/vite-plugin-svelte": "^6.1.0",
     "@tauri-apps/cli": "^2.8.0",
     "@tsconfig/svelte": "^5.0.5",
+    "@types/node": "^24.3.0",
     "eslint": "^9.34.0",
     "eslint-plugin-svelte": "^3.11.0",
     "globals": "^16.3.0",

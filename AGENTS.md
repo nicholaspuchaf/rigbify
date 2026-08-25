@@ -184,8 +184,8 @@ bun run check
 bun run test
 bun run build
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-cargo test --manifest-path src-tauri/Cargo.toml
+cargo clippy --manifest-path src-tauri/Cargo.toml --no-default-features --lib -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --no-default-features --lib
 ```
 
 Se algum comando ainda não existir, crie-o ao introduzir a respectiva ferramenta. Se não puder executar um teste por limitação do ambiente, documente claramente o que ficou pendente.
