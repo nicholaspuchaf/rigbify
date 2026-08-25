@@ -40,3 +40,9 @@ export type NewLibraryTrack = {
   year?: number;
   genre?: string;
 };
+
+export type TrackMetadataUpdate = {
+  title: string;
+  artist?: string;
+  album?: string;
+};

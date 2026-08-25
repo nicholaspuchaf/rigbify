@@ -8,7 +8,10 @@ pub mod media;
 use std::sync::Mutex;
 
 #[cfg(feature = "app")]
-use commands::{import_track, list_tracks, remove_track, set_track_favorite, LibraryState};
+use commands::{
+    add_track_to_playlist, import_track, list_tracks, remove_track, set_track_favorite,
+    update_track_metadata, LibraryState,
+};
 #[cfg(feature = "app")]
 use database::SqliteTrackRepository;
 #[cfg(feature = "app")]
@@ -34,7 +37,9 @@ pub fn run() {
             import_track,
             list_tracks,
             set_track_favorite,
-            remove_track
+            remove_track,
+            update_track_metadata,
+            add_track_to_playlist
         ])
         .run(tauri::generate_context!())
         .expect("error while running Rigbyfy");

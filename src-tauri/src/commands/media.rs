@@ -7,7 +7,7 @@ use tauri::State;
 
 use crate::{
     database::SqliteTrackRepository,
-    media::{MediaLibrary, NewTrack, Track},
+    media::{MediaLibrary, NewTrack, Track, TrackMetadataUpdate},
 };
 
 pub struct LibraryState(pub Mutex<MediaLibrary<SqliteTrackRepository>>);
@@ -62,4 +62,36 @@ pub fn set_track_favorite(
 #[tauri::command]
 pub fn remove_track(id: String, state: State<'_, LibraryState>) -> Result<(), String> {
     with_library(&state, |library| library.remove(&id))
+}
+
+#[tauri::command]
+pub fn update_track_metadata(
+    id: String,
+    metadata: TrackMetadataUpdate,
+    state: State<'_, LibraryState>,
+) -> Result<Track, String> {
+    with_library(&state, |library| {
+        library.update_metadata(
+            &id,
+            metadata,
+            now_ms().map_err(crate::errors::AppError::Storage)?,
+        )
+    })
+}
+
+#[tauri::command]
+pub fn add_track_to_playlist(
+    track_id: String,
+    playlist_id: String,
+    playlist_name: String,
+    state: State<'_, LibraryState>,
+) -> Result<(), String> {
+    with_library(&state, |library| {
+        library.add_to_playlist(
+            &track_id,
+            &playlist_id,
+            &playlist_name,
+            now_ms().map_err(crate::errors::AppError::Storage)?,
+        )
+    })
 }

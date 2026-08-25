@@ -188,6 +188,16 @@ Tabelas inicialmente previstas:
 - `media_permissions`
 - `downloads` no futuro
 
+### Ações da música
+
+O menu contextual de cada faixa permite editar título, artista e álbum, alternar favorito,
+associar a faixa a uma playlist e removê-la da biblioteca. A edição altera somente o catálogo
+SQLite do Rigbyfy; as tags e o arquivo de áudio original não são modificados. Da mesma forma,
+remover uma faixa exclui seu registro e associações, mas preserva o arquivo do usuário no celular.
+
+As tabelas `playlists` e `playlist_tracks` foram introduzidas pela migration `0002_track_actions.sql`.
+A chave composta impede que a mesma faixa seja adicionada duas vezes à mesma playlist.
+
 Toda alteração de schema exige migration incremental. Uma migration já aplicada nunca deve ser editada.
 
 ## Player Android

@@ -106,6 +106,14 @@ pub struct NewTrack {
     pub genre: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrackMetadataUpdate {
+    pub title: String,
+    pub artist: Option<String>,
+    pub album: Option<String>,
+}
+
 impl NewTrack {
     pub fn normalize(self, now_ms: i64) -> AppResult<Track> {
         let source_uri = required_text(self.source_uri, "URI da origem")?;

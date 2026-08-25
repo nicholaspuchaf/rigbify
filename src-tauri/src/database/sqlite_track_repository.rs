@@ -4,10 +4,11 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 
 use crate::{
     errors::{AppError, AppResult},
-    media::{Availability, SourceType, Track, TrackRepository},
+    media::{Availability, SourceType, Track, TrackMetadataUpdate, TrackRepository},
 };
 
 const MIGRATION_0001: &str = include_str!("migrations/0001_tracks.sql");
+const MIGRATION_0002: &str = include_str!("migrations/0002_track_actions.sql");
 
 pub struct SqliteTrackRepository {
     connection: Connection,
@@ -28,6 +29,7 @@ impl SqliteTrackRepository {
         connection.pragma_update(None, "journal_mode", "WAL")?;
         let transaction = connection.transaction()?;
         transaction.execute_batch(MIGRATION_0001)?;
+        transaction.execute_batch(MIGRATION_0002)?;
         transaction.commit()?;
         Ok(Self { connection })
     }
@@ -125,6 +127,57 @@ impl TrackRepository for SqliteTrackRepository {
         self.find_by_id(id)?.ok_or(AppError::TrackNotFound)
     }
 
+    fn update_metadata(
+        &mut self,
+        id: &str,
+        metadata: &TrackMetadataUpdate,
+        updated_at: i64,
+    ) -> AppResult<Track> {
+        let changed = self.connection.execute(
+            "UPDATE tracks SET title = ?2, artist = ?3, album = ?4, updated_at = ?5 WHERE id = ?1",
+            params![
+                id,
+                metadata.title.trim(),
+                metadata.artist,
+                metadata.album,
+                updated_at
+            ],
+        )?;
+        if changed == 0 {
+            return Err(AppError::TrackNotFound);
+        }
+        self.find_by_id(id)?.ok_or(AppError::TrackNotFound)
+    }
+
+    fn add_to_playlist(
+        &mut self,
+        track_id: &str,
+        playlist_id: &str,
+        playlist_name: &str,
+        now: i64,
+    ) -> AppResult<()> {
+        if self.find_by_id(track_id)?.is_none() {
+            return Err(AppError::TrackNotFound);
+        }
+        let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "INSERT INTO playlists (id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)
+             ON CONFLICT(id) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at",
+            params![playlist_id, playlist_name, now],
+        )?;
+        let position: i64 = transaction.query_row(
+            "SELECT COALESCE(MAX(position), -1) + 1 FROM playlist_tracks WHERE playlist_id = ?1",
+            [playlist_id],
+            |row| row.get(0),
+        )?;
+        transaction.execute(
+            "INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id, position, added_at) VALUES (?1, ?2, ?3, ?4)",
+            params![playlist_id, track_id, position, now],
+        )?;
+        transaction.commit()?;
+        Ok(())
+    }
+
     fn remove(&mut self, id: &str) -> AppResult<()> {
         let changed = self
             .connection
@@ -202,5 +255,33 @@ mod tests {
         assert!(favorite.favorite);
         repository.remove(&saved.id).expect("remove");
         assert!(repository.list().expect("list").is_empty());
+    }
+
+    #[test]
+    fn updates_metadata_and_adds_track_to_playlist() {
+        let mut repository = SqliteTrackRepository::in_memory().expect("database");
+        let saved = repository
+            .upsert(&track("content://1", "Old", 1))
+            .expect("insert");
+        let updated = repository
+            .update_metadata(
+                &saved.id,
+                &TrackMetadataUpdate {
+                    title: "New".into(),
+                    artist: Some("Other".into()),
+                    album: None,
+                },
+                2,
+            )
+            .expect("metadata");
+        assert_eq!(updated.title, "New");
+        repository
+            .add_to_playlist(&saved.id, "favorites-2026", "Favoritas", 3)
+            .expect("playlist");
+        let count: i64 = repository
+            .connection
+            .query_row("SELECT COUNT(*) FROM playlist_tracks", [], |row| row.get(0))
+            .expect("count");
+        assert_eq!(count, 1);
     }
 }

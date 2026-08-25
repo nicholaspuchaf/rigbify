@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Track } from '../types/music'; import Icon from '../components/Icon.svelte'; import Artwork from '../components/Artwork.svelte';
-  export let track: Track; export let playing: boolean; export let position = 0; export let onback: () => void; export let ontoggle: () => void; export let onnext: () => void; export let onprevious: () => void; export let onseek: (seconds: number) => void; export let onfavorite: (t: Track) => void;
+  export let track: Track; export let playing: boolean; export let position = 0; export let onback: () => void; export let ontoggle: () => void; export let onnext: () => void; export let onprevious: () => void; export let onseek: (seconds: number) => void; export let onfavorite: (t: Track) => void; export let onmore: (t: Track) => void;
   let shuffle = false; let repeat = false;
   const format = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2,'0')}`;
 </script>
-<div class="player-screen" style={`--player-hue:${track.hue}`}><header><button onclick={onback} aria-label="Recolher player"><Icon name="back" size={28} /></button><div><small>TOCANDO AGORA</small><b>Fila local</b></div><button aria-label="Mais opções"><Icon name="more" /></button></header>
+<div class="player-screen" style={`--player-hue:${track.hue}`}><header><button onclick={onback} aria-label="Recolher player"><Icon name="back" size={28} /></button><div><small>TOCANDO AGORA</small><b>Fila local</b></div><button onclick={() => onmore(track)} aria-label={`Mais opções para ${track.title}`}><Icon name="more" /></button></header>
   <Artwork hue={track.hue} large label={`Capa de ${track.title}`} />
   <div class="player-info"><div><h1>{track.title}</h1><p>{track.artist} · {track.album}</p></div><button class:active={track.favorite} onclick={() => onfavorite(track)} aria-label="Favoritar"><Icon name="heart" size={26} /></button></div>
   <div class="timeline"><input type="range" min="0" max={track.duration} value={position} onchange={(event) => onseek(Number(event.currentTarget.value))} aria-label="Posição da música" /><div><span>{format(position)}</span><span>{format(track.duration)}</span></div></div>

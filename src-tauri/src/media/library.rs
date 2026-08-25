@@ -1,6 +1,6 @@
 use crate::errors::{AppError, AppResult};
 
-use super::{NewTrack, Track, TrackRepository};
+use super::{NewTrack, Track, TrackMetadataUpdate, TrackRepository};
 
 pub struct MediaLibrary<R> {
     repository: R,
@@ -32,5 +32,47 @@ impl<R: TrackRepository> MediaLibrary<R> {
             return Err(AppError::InvalidTrack("id ausente".into()));
         }
         self.repository.remove(id)
+    }
+
+    pub fn update_metadata(
+        &mut self,
+        id: &str,
+        mut metadata: TrackMetadataUpdate,
+        now_ms: i64,
+    ) -> AppResult<Track> {
+        if id.trim().is_empty() || metadata.title.trim().is_empty() {
+            return Err(AppError::InvalidTrack(
+                "título e id são obrigatórios".into(),
+            ));
+        }
+        metadata.title = metadata.title.trim().to_string();
+        metadata.artist = metadata.artist.and_then(|value| {
+            let value = value.trim().to_string();
+            (!value.is_empty()).then_some(value)
+        });
+        metadata.album = metadata.album.and_then(|value| {
+            let value = value.trim().to_string();
+            (!value.is_empty()).then_some(value)
+        });
+        self.repository.update_metadata(id, &metadata, now_ms)
+    }
+
+    pub fn add_to_playlist(
+        &mut self,
+        track_id: &str,
+        playlist_id: &str,
+        playlist_name: &str,
+        now_ms: i64,
+    ) -> AppResult<()> {
+        if track_id.trim().is_empty()
+            || playlist_id.trim().is_empty()
+            || playlist_name.trim().is_empty()
+        {
+            return Err(AppError::InvalidTrack(
+                "música e playlist são obrigatórias".into(),
+            ));
+        }
+        self.repository
+            .add_to_playlist(track_id, playlist_id, playlist_name.trim(), now_ms)
     }
 }
