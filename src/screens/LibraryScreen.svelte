@@ -1,0 +1,10 @@
+<script lang="ts">
+  import type { Collection, Track } from '../types/music'; import ScreenHeader from '../components/ScreenHeader.svelte'; import ChipBar from '../components/ChipBar.svelte'; import Icon from '../components/Icon.svelte'; import TrackRow from '../components/TrackRow.svelte'; import CollectionCard from '../components/CollectionCard.svelte';
+  export let tracks: Track[]; export let collections: Collection[]; export let current: Track; export let onplay: (t: Track) => void; export let onfavorite: (t: Track) => void; export let onsettings: () => void;
+  let filter = 'Músicas'; let grid = false;
+</script>
+<div class="screen"><ScreenHeader title="Sua biblioteca" {onsettings} action="plus" /><ChipBar items={['Músicas','Playlists','Álbuns','Artistas']} selected={filter} onselect={(value) => filter = value} />
+  <div class="library-toolbar"><button><Icon name="sort" size={18} /> Recentes</button><button onclick={() => grid = !grid} aria-label="Alternar visualização"><Icon name="grid" size={20} /></button></div>
+  {#if filter === 'Músicas'}<div class:grid class="library-content">{#each tracks as track}{#if grid}<button class="grid-track" onclick={() => onplay(track)}><span class="grid-art" style={`--h:${track.hue}`}>♫</span><b>{track.title}</b><small>{track.artist}</small></button>{:else}<TrackRow {track} active={current.id === track.id} {onplay} {onfavorite} />{/if}{/each}</div>
+  {:else}<div class="library-collections">{#each collections as item}<CollectionCard {item} />{/each}</div>{/if}
+</div>

@@ -1,0 +1,23 @@
+min_version: 2.1.0
+
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob: "*.{js,ts,svelte}"
+      run: bunx eslint --max-warnings 0 {staged_files}
+    svelte-check:
+      glob: "*.{ts,svelte}"
+      run: bun run check
+    rust-format:
+      glob: "*.rs"
+      run: cargo fmt --check --manifest-path src-tauri/Cargo.toml
+
+pre-push:
+  parallel: true
+  commands:
+    frontend:
+      run: bun run validate
+    rust:
+      glob: "src-tauri/**/*.{rs,toml}"
+      run: bun run validate:rust

@@ -1,0 +1,23 @@
+# JavaScript / Bun
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+
+# Ambiente e editores
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+design/*.png
+design/*.jpeg
+design/*.jpeg
