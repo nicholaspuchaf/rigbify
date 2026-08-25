@@ -5,6 +5,7 @@
   export let onclose: () => void;
   export let onfavorite: (track: Track) => Promise<void> | void;
   export let onremove: (track: Track) => Promise<void> | void;
+  export let onremovefromplaylist: ((track: Track) => Promise<void> | void) | undefined = undefined;
   export let onedit: (track: Track, values: { title: string; artist: string; album: string }) => Promise<void> | void;
   export let onplaylist: (track: Track, playlist: Collection) => Promise<void> | void;
   let mode: 'menu' | 'edit' | 'playlist' | 'remove' = 'menu';
@@ -19,6 +20,7 @@
       <button class="sheet-action" onclick={() => mode = 'edit'}><span>✎</span><div><b>Editar metadados</b><small>Título, artista e álbum no Rigbyfy</small></div></button>
       <button class="sheet-action" onclick={() => mode = 'playlist'}><span>＋</span><div><b>Adicionar a uma playlist</b><small>Escolha uma coleção</small></div></button>
       <button class="sheet-action" onclick={() => run(() => onfavorite(track))}><span>♥</span><div><b>{track.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}</b><small>Atualiza sua biblioteca</small></div></button>
+      {#if onremovefromplaylist}<button class="sheet-action" onclick={() => run(() => onremovefromplaylist?.(track))}><span>−</span><div><b>Remover desta playlist</b><small>A música continua na biblioteca</small></div></button>{/if}
       <button class="sheet-action danger" onclick={() => mode = 'remove'}><span>×</span><div><b>Remover música</b><small>O arquivo original não será apagado</small></div></button>
     {:else if mode === 'edit'}
       <form onsubmit={(event) => { event.preventDefault(); void run(() => onedit(track, { title, artist, album })); }}>

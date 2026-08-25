@@ -9,9 +9,10 @@ use crate::{
 
 const MIGRATION_0001: &str = include_str!("migrations/0001_tracks.sql");
 const MIGRATION_0002: &str = include_str!("migrations/0002_track_actions.sql");
+const MIGRATION_0003: &str = include_str!("migrations/0003_playlist_details.sql");
 
 pub struct SqliteTrackRepository {
-    connection: Connection,
+    pub(crate) connection: Connection,
 }
 
 impl SqliteTrackRepository {
@@ -27,14 +28,27 @@ impl SqliteTrackRepository {
     fn from_connection(mut connection: Connection) -> AppResult<Self> {
         connection.pragma_update(None, "foreign_keys", "ON")?;
         connection.pragma_update(None, "journal_mode", "WAL")?;
+        connection.execute_batch("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);")?;
+        let version: i64 = connection.query_row(
+            "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+            [],
+            |row| row.get(0),
+        )?;
         let transaction = connection.transaction()?;
-        transaction.execute_batch(MIGRATION_0001)?;
-        transaction.execute_batch(MIGRATION_0002)?;
+        if version < 1 {
+            transaction.execute_batch(MIGRATION_0001)?;
+        }
+        if version < 2 {
+            transaction.execute_batch(MIGRATION_0002)?;
+        }
+        if version < 3 {
+            transaction.execute_batch(MIGRATION_0003)?;
+        }
         transaction.commit()?;
         Ok(Self { connection })
     }
 
-    fn read_track(row: &Row<'_>) -> rusqlite::Result<Track> {
+    pub(crate) fn read_track(row: &Row<'_>) -> rusqlite::Result<Track> {
         let source_type_value: String = row.get("source_type")?;
         let availability_value: String = row.get("availability")?;
         let parse_error = |value: String| {
@@ -283,5 +297,29 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM playlist_tracks", [], |row| row.get(0))
             .expect("count");
         assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn migrates_an_existing_version_two_database() {
+        let connection = Connection::open_in_memory().expect("connection");
+        connection.execute_batch(MIGRATION_0001).expect("v1");
+        connection.execute_batch(MIGRATION_0002).expect("v2");
+        let repository = SqliteTrackRepository::from_connection(connection).expect("migration");
+        let version: i64 = repository
+            .connection
+            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
+            .expect("version");
+        let sort_mode: String = repository
+            .connection
+            .query_row(
+                "SELECT dflt_value FROM pragma_table_info('playlists') WHERE name='sort_mode'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("column");
+        assert_eq!(version, 3);
+        assert_eq!(sort_mode, "'custom'");
     }
 }

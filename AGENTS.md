@@ -14,7 +14,21 @@ Princípios do produto:
 - A experiência deve ser rápida, acessível e consistente.
 - O aplicativo não oferece catálogo nem download de conteúdo protegido.
 
-Leia também o `README.md` antes de implementar novas funcionalidades. Ele contém arquitetura, roadmap e instruções de ambiente.
+Leia também o `README.md` antes de implementar novas funcionalidades. Ele contém arquitetura, estado real das features e instruções de ambiente.
+
+### Leitura obrigatória por escopo
+
+Antes de alterar qualquer área, leia integralmente o README da pasta correspondente. Esses documentos são contratos locais de escopo, responsabilidades, dependências, estrutura e padrões:
+
+- `design/README.md` para referências ou especificações de telas;
+- `plugins/README.md` para qualquer plugin Rust/Kotlin, permissão ou integração nativa;
+- `public/README.md` para Service Worker e recursos públicos;
+- `src/README.md` para Svelte, TypeScript, componentes, screens, services e types;
+- `src-tauri/README.md` para Tauri, Rust, SQLite, commands, capabilities e Android gerado.
+
+Se uma mudança atravessar mais de uma dessas pastas, todos os READMEs envolvidos devem ser lidos antes da implementação. Ao trabalhar em um plugin, leia também o README local dele; ao trabalhar no domínio de mídia, leia `src-tauri/src/media/README.md`.
+
+Mantenha os guias fiéis ao código. Uma feature, alteração de contrato, biblioteca, comando, pasta ou responsabilidade não está concluída até que o README raiz e os READMEs locais afetados sejam atualizados. Não descreva roadmap como funcionalidade pronta e não omita validações pendentes ou limitações conhecidas.
 
 ## 2. Stack oficial
 

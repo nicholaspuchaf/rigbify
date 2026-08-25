@@ -198,6 +198,25 @@ remover uma faixa exclui seu registro e associações, mas preserva o arquivo do
 As tabelas `playlists` e `playlist_tracks` foram introduzidas pela migration `0002_track_actions.sql`.
 A chave composta impede que a mesma faixa seja adicionada duas vezes à mesma playlist.
 
+## Implementação de playlists
+
+A migration `0003_playlist_details.sql` completa o modelo com descrição, capa, classificação,
+direção e versão otimista. O fluxo implementado permite criar, listar, abrir, renomear,
+descrever, duplicar, limpar e excluir playlists; adicionar faixas em lote; remover e reordenar;
+e classificar por ordem manual, título, artista, álbum ou data de inclusão.
+
+A posição manual é preservada quando uma classificação automática está ativa. Reordenar ou
+remover grava a sequência completa em uma transação e exige a versão esperada, evitando que uma
+edição antiga sobrescreva silenciosamente alterações mais recentes. A fila do player é criada na
+ordem exibida e reconstruída quando a playlist ativa muda.
+
+Contratos principais:
+
+- `PlaylistRepository`: persistência independente da interface e do Tauri.
+- `PlaylistLibrary`: validação e casos de uso.
+- `SqlitePlaylistRepository`: transações, ordenação e controle de versão.
+- `playlistService.ts`: única fronteira da interface com os comandos nativos.
+
 Toda alteração de schema exige migration incremental. Uma migration já aplicada nunca deve ser editada.
 
 ## Player Android
