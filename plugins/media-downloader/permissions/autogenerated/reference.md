@@ -8,6 +8,8 @@ Permite consultar mídia e gerenciar downloads tipados
 - `allow-start-download`
 - `allow-cancel-download`
 - `allow-get-download-status`
+- `allow-register-listener`
+- `allow-remove-listener`
 
 ## Permission Table
 
@@ -92,6 +94,58 @@ Enables the get_media_info command without any pre-configured scope.
 <td>
 
 Denies the get_media_info command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:allow-register-listener`
+
+</td>
+<td>
+
+Enables the register_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:deny-register-listener`
+
+</td>
+<td>
+
+Denies the register_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:allow-remove-listener`
+
+</td>
+<td>
+
+Enables the remove_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:deny-remove-listener`
+
+</td>
+<td>
+
+Denies the remove_listener command without any pre-configured scope.
 
 </td>
 </tr>

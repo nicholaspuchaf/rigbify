@@ -331,6 +331,30 @@
           "markdownDescription": "Denies the get_media_info command without any pre-configured scope."
         },
         {
+          "description": "Enables the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-register-listener",
+          "markdownDescription": "Enables the register_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-register-listener",
+          "markdownDescription": "Denies the register_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the remove_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-remove-listener",
+          "markdownDescription": "Enables the remove_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-remove-listener",
+          "markdownDescription": "Denies the remove_listener command without any pre-configured scope."
+        },
+        {
           "description": "Enables the start_download command without any pre-configured scope.",
           "type": "string",
           "const": "allow-start-download",
@@ -343,10 +367,10 @@
           "markdownDescription": "Denies the start_download command without any pre-configured scope."
         },
         {
-          "description": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`",
+          "description": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`\n- `allow-register-listener`\n- `allow-remove-listener`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`"
+          "markdownDescription": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`\n- `allow-register-listener`\n- `allow-remove-listener`"
         }
       ]
     }

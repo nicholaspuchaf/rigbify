@@ -2,6 +2,7 @@ package com.rigbyfy.mediadownloader
 
 import android.app.Activity
 import android.net.Uri
+import android.util.Log
 import app.tauri.annotation.Command
 import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
@@ -51,11 +52,16 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
                     addOption("--skip-download")
                     addOption("--no-playlist")
                     addOption("--no-warnings")
+                    // YouTube can force SABR for the default client, which
+                    // leaves formats without a downloadable URL and causes 403s.
+                    addOption("--extractor-args", "youtube:player_client=web_embedded")
                 }
                 val response = YoutubeDL.getInstance().execute(command, processId) { _, _, _ -> }
                 invoke.resolveObject(MediaInfoMapper.fromJson(response.out, request.url))
             } catch (error: Exception) {
-                invoke.reject("Não foi possível consultar esta mídia", "MEDIA_INFO_ERROR", error)
+                val detail = error.message?.trim()?.takeIf { it.isNotEmpty() } ?: error.javaClass.simpleName
+                Log.e(TAG, "Falha ao consultar mídia", error)
+                invoke.reject("Não foi possível consultar esta mídia: $detail", "MEDIA_INFO_ERROR", error)
             }
         }
     }
@@ -134,6 +140,9 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
         command.addOption("--no-playlist")
         command.addOption("--newline")
         command.addOption("--no-mtime")
+        // Prefer a client that still exposes direct media URLs when YouTube
+        // forces SABR on the default client.
+        command.addOption("--extractor-args", "youtube:player_client=web_embedded")
         command.addOption("--paths", "temp:${File(activity.cacheDir, "media-downloads/${request.downloadId}").absolutePath}")
         command.addOption("-o", "${output.absolutePath}/%(title).120B [%(id)s].%(ext)s")
         command.addOption("--print", "after_move:__RIGBYFY_FILE__%(filepath)s")
@@ -196,7 +205,14 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
 
     private fun ensureInitialized() {
         initialized.await()
-        initializationError?.let { throw IllegalStateException("Falha ao inicializar yt-dlp/FFmpeg", it) }
+        initializationError?.let { error ->
+            val detail = generateSequence(error as Throwable?) { it.cause }
+                .mapNotNull { it.message?.trim()?.takeIf(String::isNotEmpty) }
+                .joinToString("; ")
+                .ifBlank { error.javaClass.simpleName }
+            Log.e(TAG, "Inicialização do yt-dlp/FFmpeg falhou: $detail", error)
+            throw IllegalStateException("Falha ao inicializar yt-dlp/FFmpeg: $detail", error)
+        }
     }
 
     private fun cleanup(id: String, keepFinal: Boolean = false) {
@@ -204,5 +220,6 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
         if (!keepFinal) File(activity.filesDir, "media/downloads").listFiles()?.filter { it.name.endsWith(".part") || it.name.endsWith(".ytdl") }?.forEach { it.delete() }
         requests.remove(id)
     }
-}
 
+    private companion object { const val TAG = "RigbyfyDownloader" }
+}

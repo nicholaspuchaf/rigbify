@@ -83,12 +83,21 @@ Somente services devem conhecer nomes de comandos Tauri e diferenças entre nave
 - `library.ts`: registros persistidos/importados e pedidos de atualização do catálogo.
 - `player.ts`: fila e estado serializado do player.
 - `playlist.ts`: resumo, detalhe, ordenação e requests de playlist.
+- `download.ts`: metadados, formatos, opções tipadas, IDs e estados de progresso.
 
 Tipos de domínio compartilhados não devem ser redefinidos dentro de componentes. Prefira uniões literais para estados/opções fechadas e campos opcionais somente quando a ausência tiver significado real.
 
 ### `data/`
 
 - `mock.ts`: conteúdo demonstrativo usado por telas e fallbacks web. Não é fonte de verdade em Android e não deve conter dados pessoais ou arquivos de áudio reais.
+
+### Downloads
+
+- `DownloadScreen.svelte`: URL, consulta prévia, thumbnail, formato/qualidade, confirmação de autorização, progresso, cancelamento e registro concluído.
+- `downloadService.ts`: commands Tauri e listener `media-downloader|download-progress`; não expõe flags arbitrárias do yt-dlp.
+- `downloadService.test.ts`: verifica a superfície tipada de start/cancelamento.
+
+A tela diferencia `original` (sem transcodificação) de MP3/M4A/Opus/MP4 (FFmpeg quando necessário). O contrato já carrega `jobId` e `source.kind` para playlists futuras.
 
 ## Fluxos principais
 

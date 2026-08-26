@@ -51,6 +51,15 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 - Layout escuro, mobile-first, inspirado nas referências de [`design/`](design/README.md).
 - Service Worker simples para o shell web em builds de produção.
 
+### Downloads autorizados
+
+- Acesso pelo banner da Home ou pelo atalho “Baixar mídia autorizada” na seção Buscar.
+- Consulta de URLs HTTPS do YouTube/YouTube Music antes do download.
+- Metadados, thumbnail e formatos disponíveis com seleção de áudio/vídeo, original, MP3, M4A, Opus e MP4.
+- Progresso por eventos, pós-processamento FFmpeg, cancelamento por `downloadId` e registro automático na biblioteca.
+- Contratos com `jobId`, `downloadId` e `source.kind` preparados para playlists futuras; a primeira versão aceita uma mídia por job.
+- Confirmação explícita de que o usuário tem autorização para baixar o conteúdo.
+
 ## Limitações conhecidas
 
 - A implementação nativa do player existe apenas para Android; desktop retorna indisponibilidade e iOS ainda não possui implementação Swift.
@@ -58,7 +67,8 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 - Bluetooth, chamadas, perda de foco, economia de bateria e restauração após encerramento do processo ainda exigem testes completos em dispositivos reais.
 - Reordenação de playlist usa botões; gesto de arrastar ainda não existe.
 - Capas extraídas são persistidas como referência, mas nem todas as telas ainda as renderizam.
-- Histórico, fila persistente entre reinícios e downloads de fontes da internet são evoluções planejadas.
+- Histórico, fila persistente entre reinícios, downloads de playlists e compartilhamento `ACTION_SEND` são evoluções planejadas.
+- O downloader aceita somente mídia individual e salva no armazenamento privado do app; exportação para Downloads/MediaStore ainda não está exposta.
 - A política CSP está desabilitada em `tauri.conf.json` durante esta fase e deve ser endurecida antes de distribuição.
 
 ## Stack
@@ -71,7 +81,7 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 | Shell do app | Tauri 2 | Janela, mobile build e ponte JS/Rust/plugins |
 | Núcleo | Rust | Casos de uso, contratos, validação e acesso aos repositories |
 | Persistência | SQLite via `rusqlite` | Músicas, favoritos e playlists |
-| Android | Kotlin + Media3 1.7.1 | Arquivos, metadados, player, sessão e notificação |
+| Android | Kotlin + Media3 1.7.1 + yt-dlp Android 0.18.1 | Arquivos, player, Python, yt-dlp e FFmpeg |
 | Qualidade | ESLint, svelte-check, Vitest, Clippy e Lefthook | Análise, testes, build e hooks Git |
 
 ## Arquitetura
@@ -86,7 +96,8 @@ TypeScript services (contratos tipados e fallback web)
 Tauri commands em Rust ───────► SQLite repositories
         │
         ├──────────────────────► plugin media-source ─► Kotlin/Android
-        └──────────────────────► plugin media-player ─► Media3/ExoPlayer
+        ├──────────────────────► plugin media-player ─► Media3/ExoPlayer
+        └──────────────────────► plugin media-downloader ─► yt-dlp/Python/FFmpeg
 ```
 
 O player nativo é a fonte de verdade da reprodução. O SQLite é a fonte de verdade do catálogo e das playlists. Componentes não acessam SQLite, Kotlin ou comandos Tauri diretamente: telas chamam serviços TypeScript, comandos validam/adaptam a entrada e os módulos Rust executam as regras.
@@ -125,6 +136,10 @@ O componente `TrackActions` centraliza as opções. A tela envia a intenção ao
 
 `playerService.ts` monta a fila e chama o plugin `media-player`. No Android, `PlaybackService` mantém ExoPlayer e MediaSession fora do ciclo de vida da WebView; `MediaPlayerPlugin` expõe comandos Tauri e converte o estado para payloads estáveis. A UI consulta esse estado e atualiza player completo e mini player.
 
+### Downloads
+
+`DownloadScreen.svelte` consulta `downloadService` para obter metadados e formatos antes de baixar. Commands Rust validam URL, origem, qualidade e formato, geram IDs e delegam ao plugin `media-downloader`. O Kotlin mantém cada processo yt-dlp por `downloadId`, emite progresso, executa FFmpeg quando necessário, limpa temporários em cancelamento/falha e retorna a URI final. `register_completed_download` reutiliza `MediaLibrary::import` e registra a origem externa no SQLite.
+
 ### Interface e navegação
 
 `App.svelte` é o coordenador da navegação atual e mantém o estado necessário entre telas. Screens compõem componentes genéricos; serviços encapsulam efeitos externos e tipos mantêm os contratos explícitos. Esta navegação é intencionalmente leve enquanto o conjunto de rotas permanece pequeno.
@@ -157,7 +172,8 @@ rigbyfy/
 │   ├── README.md
 │   ├── permissions/default.toml
 │   ├── media-source/       # seletor e metadados locais
-│   └── media-player/       # reprodução nativa Android
+│   ├── media-player/       # reprodução nativa Android
+│   └── media-downloader/   # yt-dlp/Python/FFmpeg
 ├── public/
 │   ├── README.md
 │   └── sw.js
@@ -166,9 +182,9 @@ rigbyfy/
 │   ├── App.svelte, main.ts, style.css, vite-env.d.ts
 │   ├── components/         # 12 componentes compartilhados
 │   ├── data/mock.ts
-│   ├── screens/            # 8 telas
-│   ├── services/           # biblioteca, player, playlists, mapper e testes
-│   └── types/              # library, music, player e playlist
+│   ├── screens/            # telas, incluindo DownloadScreen
+│   ├── services/           # biblioteca, player, playlists, downloads e testes
+│   └── types/              # library, music, player, playlist e download
 └── src-tauri/
     ├── README.md
     ├── Cargo.toml, Cargo.lock, build.rs, tauri.conf.json
@@ -182,7 +198,7 @@ rigbyfy/
         │   ├── mod.rs
         │   ├── sqlite_track_repository.rs
         │   ├── sqlite_playlist_repository.rs
-        │   └── migrations/{0001_tracks.sql,0002_track_actions.sql,0003_playlist_details.sql}
+        │   └── migrations/{0001_tracks.sql,0002_track_actions.sql,0003_playlist_details.sql,0004_download_origins.sql}
         ├── errors/mod.rs
         └── media/
             ├── README.md, mod.rs, models.rs
@@ -280,6 +296,7 @@ As migrations são aplicadas em ordem ao abrir o banco:
 1. `0001_tracks.sql`: catálogo e metadados das músicas.
 2. `0002_track_actions.sql`: favoritos e estrutura inicial de playlists/relações.
 3. `0003_playlist_details.sql`: descrição, capa, ordenação, posições e versão.
+4. `0004_download_origins.sql`: URL da página e ID externo para músicas obtidas por download.
 
 Nunca altere uma migration já aplicada. Crie o próximo arquivo numerado, faça a mudança de forma transacional e teste tanto banco vazio quanto upgrade.
 
