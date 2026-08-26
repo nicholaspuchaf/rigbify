@@ -6,9 +6,9 @@ mod playlist_library;
 mod playlist_repository;
 mod repository;
 
-pub use download::validate_youtube_url;
 #[cfg(feature = "app")]
 pub use download::validate_download_options;
+pub use download::validate_youtube_url;
 pub use library::MediaLibrary;
 pub use models::{Availability, NewTrack, SourceType, Track, TrackMetadataUpdate};
 pub use playlist::{

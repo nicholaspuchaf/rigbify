@@ -16,6 +16,7 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 - Marcação e remoção de favoritos.
 - Edição local de título, artista e álbum sem alterar o arquivo original.
 - Remoção da música do catálogo sem apagar o arquivo do aparelho.
+- Importação de bundle por seletor de pasta Android: lê o `manifest.json` escolhido, registra somente áudios presentes e recria/atualiza playlists sem duplicar relações.
 - Mocks equivalentes no navegador para desenvolver a interface sem o runtime Tauri.
 
 ### Playlists
@@ -59,6 +60,7 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 - Progresso por eventos, pós-processamento FFmpeg, cancelamento por `downloadId` e registro automático na biblioteca.
 - Contratos com `jobId`, `downloadId` e `source.kind` preparados para playlists futuras; a primeira versão aceita uma mídia por job.
 - Confirmação explícita de que o usuário tem autorização para baixar o conteúdo.
+- Ferramenta local em [`temp/README.md`](temp/README.md) para preparar CSVs do Spotify, gerar candidatos via YouTube Data API para revisão explícita e baixar uma playlist por execução antes de enviá-la ao aparelho via ADB. Ela não escreve no banco do app nem importa o bundle automaticamente.
 
 ## Limitações conhecidas
 
@@ -124,6 +126,10 @@ O player nativo é a fonte de verdade da reprodução. O SQLite é a fonte de ve
 
 `libraryService.ts` chama o comando Rust de importação. O núcleo abre o plugin `media-source`, que inicia o seletor Android, preserva permissões das URIs e mapeia metadados nativos. O resultado volta ao Rust, é normalizado e persistido por `SqliteTrackRepository`. No navegador, o mesmo serviço fornece dados mockados para manter o desenvolvimento visual funcional.
 
+### Importação de bundle transferido por ADB
+
+Na Biblioteca, **Importar bundle** abre o seletor de pastas do Android. Selecione a pasta que contém `manifest.json` e `audio/` — no bundle enviado por ADB, normalmente `Musics/rigify/imports`. O Storage Access Framework concede acesso persistente somente à pasta selecionada; o plugin valida os caminhos relativos declarados no manifesto antes de devolver URIs e metadados locais. O command Rust `import_bundle` é o coordenador: persiste as faixas de modo idempotente pelo par origem/URI e adiciona os IDs resultantes às playlists descritas no manifesto. O bundle continua no armazenamento compartilhado e não é copiado para SQLite.
+
 ### Favoritos, edição e remoção
 
 O componente `TrackActions` centraliza as opções. A tela envia a intenção ao serviço; o comando Rust busca e atualiza o registro via repository. Edição altera somente o catálogo. Remoção exclui relações e registro local, não o áudio físico escolhido pelo usuário.
@@ -177,6 +183,12 @@ rigbyfy/
 ├── public/
 │   ├── README.md
 │   └── sw.js
+├── temp/                    # ferramenta versionada; CSVs e bundles locais são ignorados
+│   ├── README.md
+│   ├── pyproject.toml
+│   ├── rigbyfy_import.py
+│   ├── test_rigbyfy_import.py
+│   └── uv.lock
 ├── src/
 │   ├── README.md
 │   ├── App.svelte, main.ts, style.css, vite-env.d.ts

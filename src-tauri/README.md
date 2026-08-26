@@ -88,7 +88,7 @@ Define capacidades acessíveis pela WebView. Siga menor privilégio: novos coman
 
 ## `commands/`: adaptadores Tauri
 
-- `media.rs` recebe requests do frontend para listar/importar, editar metadados, favoritar e remover. Faz adaptação/validação de fronteira e delega ao domínio/repository/plugin.
+- `media.rs` recebe requests do frontend para listar/importar, editar metadados, favoritar e remover. Inclui `import_bundle`, que coordena a leitura Android do `Rigbyfy-import`, upsert idempotente das faixas e associação às playlists sem expor SQLite à WebView.
 - `playlists.rs` expõe criação, listagem, detalhe, edição, duplicação, limpeza, exclusão, adição, remoção, reordenação e ordenação.
 - `mod.rs` organiza os módulos públicos.
 
@@ -141,6 +141,7 @@ O detalhe deriva contagem/duração das relações válidas. Inclusão impede a 
 O núcleo depende dos plugins locais em [`../plugins/README.md`](../plugins/README.md):
 
 - `media-source` devolve seleção e metadados; o núcleo decide persistência.
+- `media-source` também abre o seletor de pastas Android para o bundle, exige que a pasta escolhida contenha `manifest.json`, resolve os caminhos relativos de áudio via Storage Access Framework e valida que eles permanecem dentro desse diretório antes de devolver URIs/metadados locais.
 - `media-player` recebe a fila preparada; o núcleo/plugin não consulta playlists por conta própria.
 
 Não replique APIs Android em commands do domínio. Encapsule diferenças de plataforma no plugin e mantenha DTOs pequenos.
@@ -188,4 +189,3 @@ cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android
 O núcleo contém testes unitários de biblioteca e playlists. Mudanças em SQL precisam de testes de repository/migration. Mudanças na ponte exigem compilação com a feature `app`; mudanças Android exigem Gradle e aparelho/emulador. Reprodução em segundo plano, notificação e tela bloqueada só são consideradas validadas após teste em aparelho real.
 
 Estado de validação na criação deste documento: frontend completo, Clippy/testes do núcleo e `cargo check` ARM64 passaram; o último APK completo após as alterações de playlist foi interrompido e permanece pendente.
-

@@ -3,14 +3,25 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use tauri::State;
+use serde::Serialize;
+use tauri::{AppHandle, Runtime, State};
+use tauri_plugin_media_source::MediaSourceExt;
 
+use super::playlists::PlaylistState;
 use crate::{
     database::SqliteTrackRepository,
-    media::{MediaLibrary, NewTrack, Track, TrackMetadataUpdate},
+    media::{MediaLibrary, NewTrack, SourceType, Track, TrackMetadataUpdate},
 };
 
 pub struct LibraryState(pub Mutex<MediaLibrary<SqliteTrackRepository>>);
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleImportResult {
+    imported_tracks: usize,
+    playlists_updated: usize,
+    missing_files: usize,
+}
 
 fn now_ms() -> Result<i64, String> {
     let duration = SystemTime::now()
@@ -36,6 +47,92 @@ fn with_library<T>(
 pub fn import_track(input: NewTrack, state: State<'_, LibraryState>) -> Result<Track, String> {
     with_library(&state, |library| {
         library.import(input, now_ms().map_err(crate::errors::AppError::Storage)?)
+    })
+}
+
+#[tauri::command]
+pub fn import_bundle<R: Runtime>(
+    app: AppHandle<R>,
+    library_state: State<'_, LibraryState>,
+    playlist_state: State<'_, PlaylistState>,
+) -> Result<BundleImportResult, String> {
+    let bundle = app
+        .media_source()
+        .import_bundle()
+        .map_err(|error| error.to_string())?;
+    let now = now_ms()?;
+    let mut track_ids = std::collections::HashMap::new();
+    let mut library = library_state
+        .0
+        .lock()
+        .map_err(|_| "biblioteca indisponível".to_string())?;
+    for input in bundle.tracks {
+        let source_type =
+            SourceType::parse(&input.source_type).map_err(|error| error.to_string())?;
+        let external_id = input.external_id.clone();
+        let stored = library
+            .import(
+                NewTrack {
+                    source_type,
+                    source_uri: input.source_uri,
+                    source_page_url: None,
+                    external_id,
+                    title: Some(input.title),
+                    file_name: input.file_name,
+                    artist: input.artist,
+                    album: input.album,
+                    duration_ms: input.duration_ms,
+                    artwork_uri: input.artwork_uri,
+                    mime_type: input.mime_type,
+                    file_size: input.file_size,
+                    track_number: input.track_number,
+                    disc_number: input.disc_number,
+                    year: input.year,
+                    genre: input.genre,
+                },
+                now,
+            )
+            .map_err(|error| error.to_string())?;
+        if let Some(key) = stored.external_id.clone() {
+            track_ids.insert(key, stored.id);
+        }
+    }
+    drop(library);
+
+    let mut playlists = playlist_state
+        .0
+        .lock()
+        .map_err(|_| "playlists indisponíveis".to_string())?;
+    let existing = playlists.list().map_err(|error| error.to_string())?;
+    let mut playlists_updated = 0;
+    for source_playlist in bundle.playlists {
+        let target = existing
+            .iter()
+            .find(|playlist| {
+                playlist
+                    .name
+                    .eq_ignore_ascii_case(source_playlist.name.trim())
+            })
+            .cloned()
+            .map(Ok)
+            .unwrap_or_else(|| playlists.create(source_playlist.name, now))
+            .map_err(|error| error.to_string())?;
+        let ids: Vec<String> = source_playlist
+            .track_keys
+            .iter()
+            .filter_map(|key| track_ids.get(key).cloned())
+            .collect();
+        if !ids.is_empty() {
+            playlists
+                .add_tracks(&target.id, ids, now)
+                .map_err(|error| error.to_string())?;
+            playlists_updated += 1;
+        }
+    }
+    Ok(BundleImportResult {
+        imported_tracks: track_ids.len(),
+        playlists_updated,
+        missing_files: bundle.missing_files,
     })
 }
 

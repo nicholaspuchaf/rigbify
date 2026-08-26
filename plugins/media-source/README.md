@@ -1,12 +1,12 @@
 # Plugin Tauri `media-source`
 
-Plugin de aquisição de músicas locais. Ele abre o seletor Android, mantém acesso às URIs escolhidas e extrai metadados; não salva músicas no SQLite e não reproduz áudio.
+Plugin de aquisição de músicas locais. Ele abre o seletor Android, mantém acesso às URIs escolhidas e extrai metadados; também permite selecionar a pasta de um bundle com `manifest.json` e áudios relativos. Não salva músicas no SQLite e não reproduz áudio.
 
 ## Contrato
 
 A API Rust registra os comandos declarados em `src/commands.rs` e troca os DTOs de `src/models.rs` com a implementação mobile. O retorno representa a seleção do usuário e inclui URI/origem, nome, artista, álbum, duração, capa quando disponível e informações técnicas. Cancelar o seletor é um resultado recuperável, não um crash.
 
-No Android, `MediaSourcePlugin.kt` usa `ACTION_OPEN_DOCUMENT`, aceita múltiplos itens e solicita permissão persistível de leitura. `MediaMetadataMapper.kt` consulta `ContentResolver` e `MediaMetadataRetriever`, normaliza campos ausentes e produz o payload consumido pelo Rust.
+No Android, `MediaSourcePlugin.kt` usa `ACTION_OPEN_DOCUMENT` para áudios individuais e `ACTION_OPEN_DOCUMENT_TREE` para bundles. A seleção da pasta do bundle exige `manifest.json` na raiz e conserva uma permissão persistível de leitura para as URIs de seus áudios; o manifesto só pode resolver caminhos relativos abaixo dessa raiz. Para não bloquear a Activity, as URIs dos itens são construídas com `DocumentsContract` a partir da árvore autorizada, sem listar a pasta para cada faixa. `MediaMetadataMapper.kt` consulta `ContentResolver` e `MediaMetadataRetriever`, normaliza campos ausentes e produz o payload consumido pelo Rust.
 
 ## Estrutura
 
