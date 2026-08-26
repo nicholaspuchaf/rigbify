@@ -20,6 +20,11 @@ export function createPlayerService(call: Invoke = invoke) {
 
 export const playerService = createPlayerService();
 
+export function calculatePlaybackProgress(positionSeconds: number, durationSeconds: number): number {
+  if (!Number.isFinite(positionSeconds) || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return 0;
+  return Math.min(100, Math.max(0, positionSeconds / durationSeconds * 100));
+}
+
 export function shouldInitializeQueue(state: PlayerSnapshot | null, trackId: string): boolean {
   return state === null || state.queueSize === 0 || state.currentTrackId !== trackId;
 }

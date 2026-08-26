@@ -21,3 +21,9 @@ src-tauri/gen/
 design/*.png
 design/*.jpeg
 design/*.jpeg
+
+
+plugins/media-downloader/target/**/*
+plugins/media-downloader/android/build/**/*
+plugins/media-downloader/android/.tauri/tauri-api/**/*
+temp/

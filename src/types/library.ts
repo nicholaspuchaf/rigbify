@@ -5,6 +5,8 @@ export type LibraryTrack = {
   id: string;
   sourceType: MediaSourceType;
   sourceUri: string;
+  sourcePageUrl: string | null;
+  externalId: string | null;
   title: string;
   artist: string | null;
   album: string | null;
@@ -27,6 +29,8 @@ export type LibraryTrack = {
 export type NewLibraryTrack = {
   sourceType: MediaSourceType;
   sourceUri: string;
+  sourcePageUrl?: string;
+  externalId?: string;
   title?: string;
   fileName?: string;
   artist?: string;

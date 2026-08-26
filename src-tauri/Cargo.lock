@@ -2552,9 +2552,11 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-media-downloader",
  "tauri-plugin-media-player",
  "tauri-plugin-media-source",
  "thiserror 2.0.20",
+ "url",
  "uuid",
 ]
 
@@ -3242,6 +3244,17 @@ dependencies = [
  "serde_json",
  "tauri-utils",
  "walkdir",
+]
+
+[[package]]
+name = "tauri-plugin-media-downloader"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

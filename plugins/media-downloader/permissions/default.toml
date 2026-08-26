@@ -1,0 +1,3 @@
+[default]
+description = "Permite consultar mídia e gerenciar downloads tipados"
+permissions = ["allow-get-media-info", "allow-start-download", "allow-cancel-download", "allow-get-download-status", "allow-register-listener", "allow-remove-listener", "allow-get-ytdlp-version", "allow-update-ytdlp"]

@@ -8,6 +8,8 @@ pub enum AppError {
     TrackNotFound,
     #[error("dados da playlist inválidos: {0}")]
     InvalidPlaylist(String),
+    #[error("download inválido: {0}")]
+    InvalidDownload(String),
     #[error("playlist não encontrada")]
     PlaylistNotFound,
     #[error("a playlist foi alterada em outro lugar; recarregue antes de salvar")]
