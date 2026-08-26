@@ -52,9 +52,6 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
                     addOption("--skip-download")
                     addOption("--no-playlist")
                     addOption("--no-warnings")
-                    // YouTube can force SABR for the default client, which
-                    // leaves formats without a downloadable URL and causes 403s.
-                    addOption("--extractor-args", "youtube:player_client=web_embedded")
                 }
                 val response = YoutubeDL.getInstance().execute(command, processId) { _, _, _ -> }
                 invoke.resolveObject(MediaInfoMapper.fromJson(response.out, request.url))
@@ -62,6 +59,39 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
                 val detail = error.message?.trim()?.takeIf { it.isNotEmpty() } ?: error.javaClass.simpleName
                 Log.e(TAG, "Falha ao consultar mídia", error)
                 invoke.reject("Não foi possível consultar esta mídia: $detail", "MEDIA_INFO_ERROR", error)
+            }
+        }
+    }
+
+    @Command
+    fun getYtdlpVersion(invoke: Invoke) {
+        executor.execute {
+            try {
+                ensureInitialized()
+                val ytdlp = YoutubeDL.getInstance()
+                invoke.resolveObject(YtdlpVersion(ytdlp.version(activity.application) ?: "unknown", ytdlp.versionName(activity.application) ?: "unknown"))
+            } catch (error: Exception) {
+                invoke.reject("Não foi possível obter a versão do yt-dlp", "YTDLP_VERSION_ERROR", error)
+            }
+        }
+    }
+
+    @Command
+    fun updateYtdlp(invoke: Invoke) {
+        val request = invoke.parseArgs(YtdlpUpdateRequest::class.java)
+        if (request.channel !in setOf("stable", "nightly")) {
+            invoke.reject("Canal de atualização inválido", "INVALID_UPDATE_CHANNEL")
+            return
+        }
+        executor.execute {
+            try {
+                ensureInitialized()
+                val channel = if (request.channel == "nightly") YoutubeDL.UpdateChannel.NIGHTLY else YoutubeDL.UpdateChannel.STABLE
+                val ytdlp = YoutubeDL.getInstance()
+                val result = ytdlp.updateYoutubeDL(activity.application, channel)
+                invoke.resolveObject(YtdlpUpdateResult(result?.name ?: "unknown", ytdlp.version(activity.application) ?: "unknown", ytdlp.versionName(activity.application) ?: "unknown"))
+            } catch (error: Exception) {
+                invoke.reject("Não foi possível atualizar o yt-dlp", "YTDLP_UPDATE_ERROR", error)
             }
         }
     }
@@ -140,9 +170,6 @@ class MediaDownloaderPlugin(private val activity: Activity) : Plugin(activity) {
         command.addOption("--no-playlist")
         command.addOption("--newline")
         command.addOption("--no-mtime")
-        // Prefer a client that still exposes direct media URLs when YouTube
-        // forces SABR on the default client.
-        command.addOption("--extractor-args", "youtube:player_client=web_embedded")
         command.addOption("--paths", "temp:${File(activity.cacheDir, "media-downloads/${request.downloadId}").absolutePath}")
         command.addOption("-o", "${output.absolutePath}/%(title).120B [%(id)s].%(ext)s")
         command.addOption("--print", "after_move:__RIGBYFY_FILE__%(filepath)s")

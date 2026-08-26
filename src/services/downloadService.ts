@@ -6,6 +6,8 @@ type Listener = (plugin: string, event: string, callback: (payload: DownloadStat
 
 export function createDownloadService(call: Invoke = invoke, listen: Listener = addPluginListener) {
   return {
+    getVersion: () => call<{ version: string; versionName: string }>('get_media_downloader_version'),
+    updateYtdlp: (channel: 'stable' | 'nightly' = 'stable') => call<{ status: string; version: string; versionName: string }>('update_media_downloader', { channel }),
     getMediaInfo: (url: string) => call<DownloadMediaInfo>('get_download_media_info', { url }),
     start: (options: DownloadOptions) => call<DownloadStatus>('start_media_download', { options }),
     cancel: (downloadId: string) => call<DownloadStatus>('cancel_media_download', { downloadId }),
@@ -16,4 +18,3 @@ export function createDownloadService(call: Invoke = invoke, listen: Listener = 
 }
 
 export const downloadService = createDownloadService();
-

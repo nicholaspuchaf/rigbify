@@ -331,6 +331,18 @@
           "markdownDescription": "Denies the get_media_info command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_ytdlp_version command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-ytdlp-version",
+          "markdownDescription": "Enables the get_ytdlp_version command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_ytdlp_version command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-ytdlp-version",
+          "markdownDescription": "Denies the get_ytdlp_version command without any pre-configured scope."
+        },
+        {
           "description": "Enables the register_listener command without any pre-configured scope.",
           "type": "string",
           "const": "allow-register-listener",
@@ -367,10 +379,22 @@
           "markdownDescription": "Denies the start_download command without any pre-configured scope."
         },
         {
-          "description": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`\n- `allow-register-listener`\n- `allow-remove-listener`",
+          "description": "Enables the update_ytdlp command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-update-ytdlp",
+          "markdownDescription": "Enables the update_ytdlp command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_ytdlp command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-update-ytdlp",
+          "markdownDescription": "Denies the update_ytdlp command without any pre-configured scope."
+        },
+        {
+          "description": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`\n- `allow-register-listener`\n- `allow-remove-listener`\n- `allow-get-ytdlp-version`\n- `allow-update-ytdlp`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`\n- `allow-register-listener`\n- `allow-remove-listener`"
+          "markdownDescription": "Permite consultar mídia e gerenciar downloads tipados\n#### This default permission set includes:\n\n- `allow-get-media-info`\n- `allow-start-download`\n- `allow-cancel-download`\n- `allow-get-download-status`\n- `allow-register-listener`\n- `allow-remove-listener`\n- `allow-get-ytdlp-version`\n- `allow-update-ytdlp`"
         }
       ]
     }

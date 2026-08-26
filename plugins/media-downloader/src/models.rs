@@ -3,6 +3,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaInfoRequest { pub url: String }
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YtdlpUpdateRequest { pub channel: String }
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YtdlpVersion { pub version: String, pub version_name: String }
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YtdlpUpdateResult { pub status: String, pub version: String, pub version_name: String }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -87,4 +96,3 @@ pub struct DownloadStatus {
     pub source_url: Option<String>,
     pub source_id: Option<String>,
 }
-

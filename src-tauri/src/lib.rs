@@ -10,10 +10,10 @@ use std::sync::Mutex;
 #[cfg(feature = "app")]
 use commands::{
     add_track_to_playlist, add_tracks_to_playlist, cancel_media_download, create_playlist,
-    delete_playlist, get_download_media_info, get_media_download_status, get_playlist,
+    delete_playlist, get_download_media_info, get_media_downloader_version, get_media_download_status, get_playlist,
     import_track, list_playlists, list_tracks, register_completed_download, remove_track,
     replace_playlist_order, set_playlist_sort, set_track_favorite, start_media_download,
-    update_playlist, update_track_metadata, LibraryState, PlaylistState,
+    update_media_downloader, update_playlist, update_track_metadata, LibraryState, PlaylistState,
 };
 #[cfg(feature = "app")]
 use database::{SqlitePlaylistRepository, SqliteTrackRepository};
@@ -62,6 +62,8 @@ pub fn run() {
             start_media_download,
             cancel_media_download,
             get_media_download_status,
+            get_media_downloader_version,
+            update_media_downloader,
             register_completed_download
         ])
         .run(tauri::generate_context!())

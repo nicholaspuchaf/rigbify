@@ -19,5 +19,6 @@ impl<R: Runtime> MediaDownloader<R> {
     pub fn start_download(&self, request: NativeDownloadRequest) -> crate::Result<DownloadStatus> { self.0.run_mobile_plugin("startDownload", request).map_err(Into::into) }
     pub fn cancel_download(&self, download_id: String) -> crate::Result<DownloadStatus> { self.0.run_mobile_plugin("cancelDownload", serde_json::json!({ "downloadId": download_id })).map_err(Into::into) }
     pub fn get_download_status(&self, download_id: String) -> crate::Result<DownloadStatus> { self.0.run_mobile_plugin("getDownloadStatus", serde_json::json!({ "downloadId": download_id })).map_err(Into::into) }
+    pub fn get_ytdlp_version(&self) -> crate::Result<YtdlpVersion> { self.0.run_mobile_plugin("getYtdlpVersion", serde_json::json!({})).map_err(Into::into) }
+    pub fn update_ytdlp(&self, request: YtdlpUpdateRequest) -> crate::Result<YtdlpUpdateResult> { self.0.run_mobile_plugin("updateYtdlp", request).map_err(Into::into) }
 }
-

@@ -19,6 +19,8 @@
   let error = '';
   let authorized = false;
   let registered = false;
+  let ytdlpVersion = '';
+  let updatingYtdlp = false;
 
   $: visibleFormats = info?.formats.filter((format) => mediaKind === 'audio' ? format.audioOnly : !format.audioOnly) ?? [];
   $: availableOutputs = mediaKind === 'audio' ? ['original', 'mp3', 'm4a', 'opus'] as OutputFormat[] : ['original', 'mp4'] as OutputFormat[];
@@ -35,8 +37,16 @@
         finally { registering = false; }
       }
     }).then((value) => listener = value).catch((reason) => error = message(reason));
+    void downloadService.getVersion().then((value) => ytdlpVersion = value.versionName || value.version).catch(() => {});
     return () => { if (listener) void listener.unregister(); };
   });
+
+  async function updateYtdlp() {
+    updatingYtdlp = true; error = '';
+    try { const result = await downloadService.updateYtdlp('stable'); ytdlpVersion = result.versionName || result.version; }
+    catch (reason) { error = message(reason); }
+    finally { updatingYtdlp = false; }
+  }
 
   async function inspect() {
     loading = true; error = ''; info = null; status = null; registered = false;
@@ -75,6 +85,7 @@
 
 <div class="screen download-screen">
   <header class="subpage-header"><button onclick={onback} aria-label="Voltar"><Icon name="back" /></button><div><h1>Baixar mídia</h1><small>YouTube e YouTube Music</small></div></header>
+  <div class="downloader-version"><small>yt-dlp {ytdlpVersion || 'embutido'}</small><button onclick={updateYtdlp} disabled={updatingYtdlp}>{updatingYtdlp ? 'Atualizando…' : 'Atualizar yt-dlp'}</button></div>
   <form class="download-url" onsubmit={(event) => { event.preventDefault(); void inspect(); }}>
     <label for="download-url">URL do conteúdo</label>
     <div><input id="download-url" bind:value={url} inputmode="url" placeholder="https://youtube.com/watch?v=…" required /><button disabled={loading}>{loading && !info ? 'Consultando…' : 'Analisar'}</button></div>

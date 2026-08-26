@@ -8,5 +8,6 @@ impl<R: Runtime> MediaDownloader<R> {
     pub fn start_download(&self, _: NativeDownloadRequest) -> crate::Result<DownloadStatus> { Err(crate::Error::UnsupportedPlatform) }
     pub fn cancel_download(&self, _: String) -> crate::Result<DownloadStatus> { Err(crate::Error::UnsupportedPlatform) }
     pub fn get_download_status(&self, _: String) -> crate::Result<DownloadStatus> { Err(crate::Error::UnsupportedPlatform) }
+    pub fn get_ytdlp_version(&self) -> crate::Result<YtdlpVersion> { Err(crate::Error::UnsupportedPlatform) }
+    pub fn update_ytdlp(&self, _: YtdlpUpdateRequest) -> crate::Result<YtdlpUpdateResult> { Err(crate::Error::UnsupportedPlatform) }
 }
-

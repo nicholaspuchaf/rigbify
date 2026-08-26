@@ -5,6 +5,8 @@ const COMMANDS: &[&str] = &[
     "get_download_status",
     "register_listener",
     "remove_listener",
+    "get_ytdlp_version",
+    "update_ytdlp",
 ];
 
 fn main() {

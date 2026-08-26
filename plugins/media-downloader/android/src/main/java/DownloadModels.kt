@@ -3,6 +3,9 @@ package com.rigbyfy.mediadownloader
 import app.tauri.annotation.InvokeArg
 
 @InvokeArg class MediaInfoRequest { var url: String = "" }
+@InvokeArg class YtdlpUpdateRequest { var channel: String = "stable" }
+data class YtdlpVersion(val version: String, val versionName: String)
+data class YtdlpUpdateResult(val status: String, val version: String, val versionName: String)
 @InvokeArg class DownloadSource { var kind: String = "single"; var url: String = "" }
 @InvokeArg class DownloadOptions {
     var source: DownloadSource = DownloadSource()
@@ -66,4 +69,3 @@ data class DownloadStatus(
     val sourceUrl: String? = null,
     val sourceId: String? = null
 )
-

@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_media_downloader::{
     DownloadOptions, DownloadStatus, MediaDownloaderExt, MediaInfo, MediaInfoRequest,
-    NativeDownloadRequest,
+    NativeDownloadRequest, YtdlpUpdateRequest, YtdlpUpdateResult, YtdlpVersion,
 };
 use uuid::Uuid;
 
@@ -21,6 +21,17 @@ pub async fn get_download_media_info<R: Runtime>(
     app.media_downloader()
         .get_media_info(MediaInfoRequest { url })
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn get_media_downloader_version<R: Runtime>(app: AppHandle<R>) -> Result<YtdlpVersion, String> {
+    app.media_downloader().get_ytdlp_version().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn update_media_downloader<R: Runtime>(channel: String, app: AppHandle<R>) -> Result<YtdlpUpdateResult, String> {
+    if channel != "stable" && channel != "nightly" { return Err("canal de atualização inválido".into()); }
+    app.media_downloader().update_ytdlp(YtdlpUpdateRequest { channel }).map_err(|error| error.to_string())
 }
 
 #[tauri::command]

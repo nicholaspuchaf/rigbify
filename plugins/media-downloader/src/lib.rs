@@ -12,11 +12,10 @@ impl<R: Runtime, T: Manager<R>> MediaDownloaderExt<R> for T { fn media_downloade
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("media-downloader")
-        .invoke_handler(tauri::generate_handler![commands::get_media_info, commands::start_download, commands::cancel_download, commands::get_download_status])
+        .invoke_handler(tauri::generate_handler![commands::get_media_info, commands::start_download, commands::cancel_download, commands::get_download_status, commands::get_ytdlp_version, commands::update_ytdlp])
         .setup(|app, api| {
             #[cfg(mobile)] let downloader = mobile::init(app, api)?;
             #[cfg(desktop)] let downloader = desktop::init(app, api)?;
             app.manage(downloader); Ok(())
         }).build()
 }
-

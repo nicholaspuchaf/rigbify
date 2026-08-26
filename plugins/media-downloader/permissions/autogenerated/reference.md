@@ -10,6 +10,8 @@ Permite consultar mídia e gerenciar downloads tipados
 - `allow-get-download-status`
 - `allow-register-listener`
 - `allow-remove-listener`
+- `allow-get-ytdlp-version`
+- `allow-update-ytdlp`
 
 ## Permission Table
 
@@ -101,6 +103,32 @@ Denies the get_media_info command without any pre-configured scope.
 <tr>
 <td>
 
+`media-downloader:allow-get-ytdlp-version`
+
+</td>
+<td>
+
+Enables the get_ytdlp_version command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:deny-get-ytdlp-version`
+
+</td>
+<td>
+
+Denies the get_ytdlp_version command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `media-downloader:allow-register-listener`
 
 </td>
@@ -172,6 +200,32 @@ Enables the start_download command without any pre-configured scope.
 <td>
 
 Denies the start_download command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:allow-update-ytdlp`
+
+</td>
+<td>
+
+Enables the update_ytdlp command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-downloader:deny-update-ytdlp`
+
+</td>
+<td>
+
+Denies the update_ytdlp command without any pre-configured scope.
 
 </td>
 </tr>
