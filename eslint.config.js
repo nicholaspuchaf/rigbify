@@ -9,7 +9,8 @@ export default tseslint.config(
       'dist/**',
       'node_modules/**',
       'src-tauri/gen/**',
-      'src-tauri/target/**'
+      'src-tauri/target/**',
+      'temp/**'
     ]
   },
   js.configs.recommended,

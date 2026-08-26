@@ -26,4 +26,12 @@ design/*.jpeg
 plugins/media-downloader/target/**/*
 plugins/media-downloader/android/build/**/*
 plugins/media-downloader/android/.tauri/tauri-api/**/*
-temp/
+# CSVs exportados, bundles e ambientes locais permanecem privados. A ferramenta
+# reutilizável de preparação de importação é versionada.
+temp/*
+!temp/README.md
+!temp/pyproject.toml
+!temp/rigbyfy_import.py
+!temp/test_rigbyfy_import.py
+!temp/uv.lock
+!temp/.env.example

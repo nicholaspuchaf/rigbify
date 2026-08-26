@@ -45,6 +45,12 @@ export type NewLibraryTrack = {
   genre?: string;
 };
 
+export type BundleImportResult = {
+  importedTracks: number;
+  playlistsUpdated: number;
+  missingFiles: number;
+};
+
 export type TrackMetadataUpdate = {
   title: string;
   artist?: string;

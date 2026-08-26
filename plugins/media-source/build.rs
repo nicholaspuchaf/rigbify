@@ -1,4 +1,4 @@
-const COMMANDS: &[&str] = &["pick_audio"];
+const COMMANDS: &[&str] = &["pick_audio", "import_bundle"];
 
 fn main() {
     tauri_plugin::Builder::new(COMMANDS)

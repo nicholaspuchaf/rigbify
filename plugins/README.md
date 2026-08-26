@@ -36,7 +36,7 @@ Pastas Android `.tauri/tauri-api` são suporte gerado pelo toolchain. Não edite
 
 ## `media-source`
 
-Responsável por escolher arquivos locais e extrair seus metadados; não persiste catálogo.
+Responsável por escolher arquivos locais, extrair metadados e localizar o bundle transferido; não persiste catálogo nem decide playlists.
 
 ### Rust
 
@@ -50,9 +50,9 @@ Responsável por escolher arquivos locais e extrair seus metadados; não persist
 
 ### Android
 
-- `MediaSourcePlugin.kt`: inicia `ACTION_OPEN_DOCUMENT`, aceita seleção múltipla, preserva permissão de leitura e devolve resultados ao Tauri.
+- `MediaSourcePlugin.kt`: inicia `ACTION_OPEN_DOCUMENT`, aceita seleção múltipla, preserva permissão de leitura e devolve resultados ao Tauri. O comando `import_bundle` também lê `Musics/rigify/imports/Rigbyfy-import/manifest.json`, retorna apenas arquivos existentes e preserva o vínculo entre `trackKeys` e playlists.
 - `MediaMetadataMapper.kt`: usa `MediaMetadataRetriever` e `ContentResolver` para título, artista, álbum, duração, capa, MIME, tamanho, faixa, disco, ano e gênero.
-- `AndroidManifest.xml`: declara somente requisitos da integração.
+- `AndroidManifest.xml`: declara acesso a áudio compartilhado (`READ_MEDIA_AUDIO`, ou leitura legada até API 32); a permissão é solicitada no momento da importação.
 - `MediaMetadataMapperTest.kt`: valida o mapeamento Kotlin isolável.
 
 Bibliotecas principais: Tauri Android, AndroidX Activity KTX 1.10.1, Core KTX 1.16.0 e JUnit. O módulo usa compile SDK 36, min SDK 21 e bytecode/JVM 1.8.
@@ -118,4 +118,3 @@ bun run tauri android dev
 ```
 
 Execute também testes Gradle dos módulos e valide em aparelho real: seleção múltipla, permissão persistente, formatos suportados, background, tela bloqueada, notificação, fones, Bluetooth, interrupção por chamada e retomada. Um build que compila não substitui esses testes de ciclo de vida.
-

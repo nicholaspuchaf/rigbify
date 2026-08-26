@@ -295,6 +295,18 @@
       "type": "string",
       "oneOf": [
         {
+          "description": "Enables the import_bundle command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-import-bundle",
+          "markdownDescription": "Enables the import_bundle command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the import_bundle command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-import-bundle",
+          "markdownDescription": "Denies the import_bundle command without any pre-configured scope."
+        },
+        {
           "description": "Enables the pick_audio command without any pre-configured scope.",
           "type": "string",
           "const": "allow-pick-audio",
@@ -307,10 +319,10 @@
           "markdownDescription": "Denies the pick_audio command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-pick-audio`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-pick-audio`\n- `allow-import-bundle`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-pick-audio`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-pick-audio`\n- `allow-import-bundle`"
         }
       ]
     }

@@ -17,4 +17,23 @@ pub struct SelectedTrack {
     pub disc_number: Option<u32>,
     pub year: Option<i32>,
     pub genre: Option<String>,
+    #[serde(default)]
+    pub external_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BundlePlaylist {
+    pub id: String,
+    pub name: String,
+    pub track_keys: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleImport {
+    pub tracks: Vec<SelectedTrack>,
+    pub playlists: Vec<BundlePlaylist>,
+    #[serde(default)]
+    pub missing_files: usize,
 }

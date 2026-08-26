@@ -30,4 +30,8 @@ impl<R: Runtime> MediaSource<R> {
             .run_mobile_plugin("pickAudio", ())
             .map_err(Into::into)
     }
+
+    pub fn import_bundle(&self) -> crate::Result<BundleImport> {
+        self.0.run_mobile_plugin("importBundle", ()).map_err(Into::into)
+    }
 }

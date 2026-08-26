@@ -17,4 +17,8 @@ impl<R: Runtime> MediaSource<R> {
     pub fn pick_audio(&self) -> crate::Result<Vec<SelectedTrack>> {
         Err(crate::Error::UnsupportedPlatform)
     }
+
+    pub fn import_bundle(&self) -> crate::Result<BundleImport> {
+        Err(crate::Error::UnsupportedPlatform)
+    }
 }

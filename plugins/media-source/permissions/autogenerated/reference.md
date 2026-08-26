@@ -5,6 +5,7 @@ Default permissions for the plugin
 #### This default permission set includes the following:
 
 - `allow-pick-audio`
+- `allow-import-bundle`
 
 ## Permission Table
 
@@ -14,6 +15,32 @@ Default permissions for the plugin
 <th>Description</th>
 </tr>
 
+
+<tr>
+<td>
+
+`media-source:allow-import-bundle`
+
+</td>
+<td>
+
+Enables the import_bundle command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`media-source:deny-import-bundle`
+
+</td>
+<td>
+
+Denies the import_bundle command without any pre-configured scope.
+
+</td>
+</tr>
 
 <tr>
 <td>

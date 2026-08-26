@@ -105,6 +105,8 @@ A tela diferencia `original` (sem transcodificação) de MP3/M4A/Opus/MP4 (FFmpe
 
 `App/LibraryScreen` solicita `libraryService` → Tauri chama Rust → plugin Android abre seletor e extrai metadados → Rust persiste → resposta tipada é mapeada para `Track` → a UI recarrega a lista.
 
+O botão **Importar bundle** usa `libraryService.importBundle()` e não interpreta JSON nem manipula arquivos na WebView. Ele chama o command Rust, abre o seletor de pasta Android, recarrega a biblioteca e as playlists após a conclusão e apresenta a falha retornada pelo Android. O usuário seleciona a pasta que contém o `manifest.json` e a pasta `audio/` do bundle.
+
 ### Executar ação de faixa
 
 `TrackRow` ou `PlayerScreen` abre `TrackActions` → screen identifica a intenção → service executa comando → backend altera SQLite → screen atualiza/recarrega o estado. O mesmo componente garante as mesmas ações em todos os contextos.
