@@ -12,18 +12,20 @@
   let imageSource: string | undefined;
   let requestedSource: string | undefined;
 
-  afterUpdate(() => {
+  function resolveArtwork() {
     if (src === requestedSource) return;
     requestedSource = src;
     failedSource = undefined;
     imageSource = undefined;
-    if (src) {
-      const source = src;
-      void resolveArtworkSource(source).then((resolved) => {
-        if (requestedSource === source) imageSource = resolved;
-      });
-    }
-  });
+    if (!src) return;
+
+    const source = src;
+    void resolveArtworkSource(source).then((resolved) => {
+      if (requestedSource === source) imageSource = resolved;
+    });
+  }
+
+  afterUpdate(resolveArtwork);
   $: showImage = Boolean(imageSource) && imageSource !== failedSource;
 </script>
 
