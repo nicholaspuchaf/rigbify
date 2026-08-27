@@ -35,7 +35,7 @@ screens ─────► services ─────► @tauri-apps/api ───
 
 Componentes reutilizáveis e predominantemente apresentacionais:
 
-- `Artwork.svelte`: solicita ao serviço a representação `data:` de uma capa local do cache privado e mantém fallback visual quando ela estiver ausente ou falhar ao carregar.
+- `Artwork.svelte`: solicita a representação `data:` de uma capa local do cache privado e mantém fallback visual quando ela estiver ausente ou falhar ao carregar. O serviço limita as leituras nativas simultâneas para preservar a fluidez em bibliotecas grandes.
 - `Avatar.svelte`: avatar circular usado no cabeçalho.
 - `BottomNavigation.svelte`: navegação entre áreas principais.
 - `ChipBar.svelte`: filtros/atalhos horizontais selecionáveis.
