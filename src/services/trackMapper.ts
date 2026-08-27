@@ -10,6 +10,7 @@ export function toUiTrack(track: LibraryTrack): Track {
     duration: Math.round(track.durationMs / 1_000),
     hue: stableHue(track.id),
     favorite: track.favorite,
+    playCount: track.playCount,
     sourceUri: track.sourceUri,
     artworkUri: track.artworkUri ?? undefined
   };

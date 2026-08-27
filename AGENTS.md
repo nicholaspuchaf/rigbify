@@ -229,11 +229,16 @@ Toda mudança relevante deve atualizar pelo menos um destes locais:
 - `README.md` para uso, instalação, arquitetura ou recursos visíveis.
 - `CHANGELOG.md` para alterações entregues ao usuário, quando criado.
 - `docs/adr/` para decisões arquiteturais importantes.
+- `docs/issues/` para registrar e acompanhar problemas relatados enquanto o GitHub Issues não estiver conectado.
 - Comentários no código somente para explicar intenção, restrições ou decisões não óbvias.
 
 Não use comentários para repetir o que o código já diz. APIs públicas e contratos entre camadas devem ser documentados.
 
 Uma decisão arquitetural deve registrar contexto, opções consideradas, decisão e consequências.
+
+### Triagem local de issues
+
+Antes de implementar uma correção a partir de um relato informal, registre ou atualize uma issue em `docs/issues/` usando o template local. O registro deve separar fatos, evidências e hipóteses, indicar prioridade/área provável e nunca conter segredos ou dados pessoais. Criar ou atualizar uma issue não autoriza por si só uma alteração de código: siga a solicitação explícita do usuário para implementar.
 
 ## 14. Commits e revisões
 

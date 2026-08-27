@@ -32,6 +32,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lime); outl
 
 /* Artwork, rows and miniplayer */
 .artwork { position: relative; display: grid; width: 54px; height: 54px; flex: 0 0 auto; overflow: hidden; place-items: center; border-radius: 9px; background: linear-gradient(140deg, hsl(var(--art-hue) 68% 47%), hsl(calc(var(--art-hue) + 45) 35% 14%)); }
+.artwork img { width: 100%; height: 100%; object-fit: cover; }
 .artwork svg { position: relative; z-index: 1; }
 .artwork i { position: absolute; right: -18px; bottom: -18px; width: 55px; height: 55px; border: 11px solid #08080866; border-radius: 50%; }
 .track-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px 34px; align-items: center; min-height: 70px; border-radius: 12px; }
@@ -99,7 +100,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lime); outl
 .library-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 10px; }
 .library-toolbar button { display: flex; min-height: 44px; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; }
 .library-content.grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px 13px; }
-.grid-track { min-width: 0; text-align: left; }.grid-art { display: grid; width: 100%; aspect-ratio: 1; margin-bottom: 9px; place-items: center; border-radius: 11px; background: linear-gradient(135deg, hsl(var(--h) 65% 40%), #101010); font-size: 33px; }.grid-track b,.grid-track small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.grid-track small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.grid-track { min-width: 0; text-align: left; }.grid-track .artwork { width: 100%; height: auto; aspect-ratio: 1; margin-bottom: 9px; border-radius: 11px; font-size: 33px; }.grid-track b,.grid-track small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.grid-track small { margin-top: 3px; color: var(--muted); font-size: 10px; }
 .library-collections { display: grid; gap: 10px; margin-top: 20px; }.library-collections .collection-card { background: transparent; }.library-collections .collection-card .artwork { width: 70px; height: 70px; border-radius: 8px; }
 .create-playlist-card { display: flex; width: 100%; min-height: 72px; align-items: center; gap: 17px; margin-top: 18px; padding: 12px 16px; border: 1px dashed #45463a; border-radius: 13px; color: var(--lime); background: #151611; text-align: left; font-size: 25px; }.create-playlist-card span b,.create-playlist-card span small { display:block; }.create-playlist-card span b { color:#eee; font-size:14px; }.create-playlist-card span small { margin-top:4px; color:var(--muted); font-size:10px; }
 

@@ -50,7 +50,7 @@ Responsável por escolher arquivos locais, extrair metadados e localizar o bundl
 
 ### Android
 
-- `MediaSourcePlugin.kt`: inicia `ACTION_OPEN_DOCUMENT`, aceita seleção múltipla, preserva permissão de leitura e devolve resultados ao Tauri. O comando `import_bundle` também lê `Musics/rigify/imports/Rigbyfy-import/manifest.json`, retorna apenas arquivos existentes e preserva o vínculo entre `trackKeys` e playlists.
+- `MediaSourcePlugin.kt`: inicia `ACTION_OPEN_DOCUMENT`, aceita seleção múltipla, preserva permissão de leitura e devolve resultados ao Tauri. O comando `import_bundle` também lê `Musics/rigify/imports/Rigbyfy-import/manifest.json`, retorna apenas arquivos existentes, copia capas referenciadas para o cache privado e preserva o vínculo entre `trackKeys` e playlists.
 - `MediaMetadataMapper.kt`: usa `MediaMetadataRetriever` e `ContentResolver` para título, artista, álbum, duração, capa, MIME, tamanho, faixa, disco, ano e gênero.
 - `AndroidManifest.xml`: declara acesso a áudio compartilhado (`READ_MEDIA_AUDIO`, ou leitura legada até API 32); a permissão é solicitada no momento da importação.
 - `MediaMetadataMapperTest.kt`: valida o mapeamento Kotlin isolável.

@@ -15,6 +15,7 @@ O áudio não é copiado para o banco. O catálogo guarda URI/origem e metadados
 - `rusqlite` 0.37 com SQLite `bundled`: banco local consistente entre ambientes.
 - `thiserror` 2: erros tipados.
 - `uuid` 1 com v4: identificadores de entidades.
+- `unicode-normalization` 0.1: ordenação estável de texto com case e diacríticos normalizados.
 - `tauri-plugin-media-source` e `tauri-plugin-media-player`: crates locais opcionais, usados pela feature `app`.
 
 A feature padrão `app` liga o shell Tauri e plugins. Testes do núcleo usam `--no-default-features --lib` para evitar dependências gráficas/plataforma quando elas não são necessárias.
@@ -22,7 +23,7 @@ A feature padrão `app` liga o shell Tauri e plugins. Testes do núcleo usam `--
 ### Build e plataforma
 
 - `build.rs` executa o build helper do Tauri.
-- `tauri.conf.json` aponta o dev server Vite para a porta 1420, bundle web para `../dist`, janela 430×820 e identificador Android `com.rigbyfy.app`.
+- `tauri.conf.json` aponta o dev server Vite para a porta 1420, bundle web para `../dist`, janela 430×820, fundo inicial escuro e identificador Android `com.rigbyfy.app`.
 - `capabilities/default.json` habilita `core:default`, `media-source:default` e `media-player:default` para a janela principal.
 - O build Android usa o NDK configurado no ambiente e o projeto gerado em `gen/android`.
 
@@ -38,7 +39,8 @@ src-tauri/
 ├── capabilities/
 │   └── default.json        # permissões da janela/WebView
 ├── icons/
-│   └── icon.svg            # fonte de ícone disponível
+│   ├── icon.png            # fonte raster do ícone de produção
+│   └── candidates/         # alternativas visuais, com fones/equalizador aprovada
 ├── gen/android/            # projeto Gradle gerado pelo Tauri
 └── src/
     ├── main.rs             # binário mínimo que chama a biblioteca
@@ -114,7 +116,7 @@ Esse módulo deve permanecer compilável/testável sem Tauri sempre que possíve
 ### Repositories
 
 - `sqlite_track_repository.rs`: SQL do catálogo, busca/listagem, importação idempotente, favoritos, edição e remoção.
-- `sqlite_playlist_repository.rs`: SQL de playlists e relações, agregados, ordenações, posições e transações.
+- `sqlite_playlist_repository.rs`: SQL de playlists e relações, agregados, ordenações, posições e transações. A comparação de título, artista e álbum normaliza case e diacríticos antes de ordenar, mantendo campos vazios no final.
 
 Somente implementações de repository devem conhecer tabelas e consultas. Retorne entidades do domínio, não rows/crates SQLite para a interface.
 
@@ -141,7 +143,8 @@ O detalhe deriva contagem/duração das relações válidas. Inclusão impede a 
 O núcleo depende dos plugins locais em [`../plugins/README.md`](../plugins/README.md):
 
 - `media-source` devolve seleção e metadados; o núcleo decide persistência.
-- `media-source` também abre o seletor de pastas Android para o bundle, exige que a pasta escolhida contenha `manifest.json`, resolve os caminhos relativos de áudio via Storage Access Framework e valida que eles permanecem dentro desse diretório antes de devolver URIs/metadados locais.
+- `media-source` também abre o seletor de pastas Android para o bundle, exige que a pasta escolhida contenha `manifest.json`, resolve os caminhos relativos de áudio via Storage Access Framework, copia capas com tamanho limitado para o cache privado e valida que os caminhos permanecem dentro desse diretório antes de devolver URIs/metadados locais.
+- `load_artwork_data_uri` aceita somente uma URI `file://` localizada no cache privado `artwork/`, limita a leitura a 10 MiB e devolve uma URL `data:` para a WebView. A URI de arquivo persistida não é substituída, pois é a entrada do Media3 para notificação e tela bloqueada.
 - `media-player` recebe a fila preparada; o núcleo/plugin não consulta playlists por conta própria.
 
 Não replique APIs Android em commands do domínio. Encapsule diferenças de plataforma no plugin e mantenha DTOs pequenos.

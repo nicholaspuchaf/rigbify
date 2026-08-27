@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "identifier": "com.rigbyfy.app",
   "build": { "beforeDevCommand": "bun run dev", "devUrl": "http://localhost:1420", "beforeBuildCommand": "bun run build", "frontendDist": "../dist" },
-  "app": { "windows": [{ "label": "main", "title": "Rigbyfy", "width": 430, "height": 820, "minWidth": 320, "minHeight": 600 }], "security": { "csp": null } },
-  "bundle": { "active": true, "targets": "all", "icon": ["icons/icon.svg"] }
+  "app": { "windows": [{ "label": "main", "title": "Rigbyfy", "width": 430, "height": 820, "minWidth": 320, "minHeight": 600, "backgroundColor": "#0b0b0d" }], "security": { "csp": null } },
+  "bundle": { "active": true, "targets": "all", "icon": ["icons/icon.png"] }
 }
