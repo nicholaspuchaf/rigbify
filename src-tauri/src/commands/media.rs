@@ -144,6 +144,29 @@ pub fn list_tracks(state: State<'_, LibraryState>) -> Result<Vec<Track>, String>
 }
 
 #[tauri::command]
+pub fn record_playback(
+    id: String,
+    playlist_id: Option<String>,
+    library_state: State<'_, LibraryState>,
+    playlist_state: State<'_, PlaylistState>,
+) -> Result<Track, String> {
+    let played_at = now_ms()?;
+    let track = with_library(&library_state, |library| {
+        library.record_playback(&id, played_at)
+    })?;
+    if let Some(playlist_id) = playlist_id.filter(|value| !value.trim().is_empty()) {
+        let mut playlists = playlist_state
+            .0
+            .lock()
+            .map_err(|_| "playlists indisponíveis".to_string())?;
+        playlists
+            .record_playback(&playlist_id, played_at)
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(track)
+}
+
+#[tauri::command]
 pub fn load_artwork_data_uri<R: Runtime>(
     app: AppHandle<R>,
     uri: String,

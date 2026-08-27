@@ -27,6 +27,13 @@ impl<R: TrackRepository> MediaLibrary<R> {
         self.repository.set_favorite(id, favorite, now_ms)
     }
 
+    pub fn record_playback(&mut self, id: &str, now_ms: i64) -> AppResult<Track> {
+        if id.trim().is_empty() {
+            return Err(AppError::InvalidTrack("id ausente".into()));
+        }
+        self.repository.record_playback(id, now_ms)
+    }
+
     pub fn remove(&mut self, id: &str) -> AppResult<()> {
         if id.trim().is_empty() {
             return Err(AppError::InvalidTrack("id ausente".into()));

@@ -177,13 +177,23 @@ impl PlaylistRepository for SqlitePlaylistRepository {
     }
     fn list(&self) -> AppResult<Vec<Playlist>> {
         let mut statement = self.connection.prepare(&format!(
-            "{} GROUP BY p.id ORDER BY p.updated_at DESC, p.name COLLATE NOCASE",
+            "{} GROUP BY p.id ORDER BY p.last_played_at IS NULL, p.last_played_at DESC, p.updated_at DESC, p.id",
             Self::base_query()
         ))?;
         let playlists = statement
             .query_map([], Self::read_playlist)?
             .collect::<Result<Vec<_>, _>>()?;
         Ok(playlists)
+    }
+    fn record_playback(&mut self, id: &str, played_at: i64) -> AppResult<()> {
+        if self.connection.execute(
+            "UPDATE playlists SET last_played_at = ?2 WHERE id = ?1",
+            params![id, played_at],
+        )? == 0
+        {
+            return Err(AppError::PlaylistNotFound);
+        }
+        Ok(())
     }
     fn details(&self, id: &str) -> AppResult<PlaylistDetails> {
         let playlist = Self::get_playlist(&self.connection, id)?;
@@ -329,6 +339,17 @@ mod tests {
         assert_eq!(created.name, "Minha playlist");
         assert_eq!(details.playlist.track_count, 2);
         assert_eq!(details.playlist.duration_ms, 120_000);
+    }
+
+    #[test]
+    fn lists_the_most_recently_played_playlist_first() {
+        let mut repository = repository();
+        repository.create("p1", "Primeira", 1).expect("create");
+        repository.create("p2", "Segunda", 2).expect("create");
+        repository.record_playback("p1", 3).expect("played");
+
+        let playlists = repository.list().expect("list");
+        assert_eq!(playlists[0].id, "p1");
     }
 
     #[test]

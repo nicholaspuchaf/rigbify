@@ -7,6 +7,7 @@ pub trait TrackRepository: Send {
     fn list(&self) -> AppResult<Vec<Track>>;
     fn find_by_id(&self, id: &str) -> AppResult<Option<Track>>;
     fn set_favorite(&mut self, id: &str, favorite: bool, updated_at: i64) -> AppResult<Track>;
+    fn record_playback(&mut self, id: &str, played_at: i64) -> AppResult<Track>;
     fn update_metadata(
         &mut self,
         id: &str,

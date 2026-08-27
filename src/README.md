@@ -70,7 +70,7 @@ Screens podem manter estado efêmero de formulário e carregamento. Estado persi
 
 Fronteira de efeitos e contratos do frontend:
 
-- `libraryService.ts`: lista/importa músicas, altera favorito/metadados, remove do catálogo e oferece fallback web.
+- `libraryService.ts`: lista/importa músicas, altera favorito/metadados, registra início de reprodução, remove do catálogo e oferece fallback web.
 - `playerService.ts`: converte músicas em itens da fila e expõe play, pause, seek, anterior, próxima, stop e leitura do estado; no navegador usa estado mockado.
 - `playlistService.ts`: CRUD, detalhes, adição/remoção, ordenação e reordenação de playlists, incluindo fallback em memória no navegador.
 - `libraryCollections.ts`: agrupamento e ordenação puros de álbuns, artistas e playlists para a UI.
@@ -81,7 +81,7 @@ Fronteira de efeitos e contratos do frontend:
 - `artworkService.ts`: solicita ao comando nativo uma representação `data:` de capas do cache privado; a URI `file://` original continua exclusiva do player nativo.
 - `*.test.ts`: testes unitários adjacentes aos respectivos serviços/mapeadores.
 
-Somente services devem conhecer nomes de comandos Tauri e diferenças entre navegador e aplicativo. Preserve os payloads em `camelCase` na interface e faça qualquer adaptação de contrato num único lugar.
+Somente services devem conhecer nomes de comandos Tauri e diferenças entre navegador e aplicativo. Preserve os payloads em `camelCase` na interface e faça qualquer adaptação de contrato num único lugar. A ordenação **Recentes** é resolvida pelo SQLite; a UI não deve chamar `sort()` sobre a lista completa de músicas para esse modo.
 
 ### `types/`
 

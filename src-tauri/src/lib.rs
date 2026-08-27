@@ -12,7 +12,7 @@ use commands::{
     add_track_to_playlist, add_tracks_to_playlist, cancel_media_download, create_playlist,
     delete_playlist, get_download_media_info, get_media_download_status,
     get_media_downloader_version, get_playlist, import_bundle, import_track, list_playlists,
-    list_tracks, load_artwork_data_uri, register_completed_download, remove_track,
+    list_tracks, load_artwork_data_uri, record_playback, register_completed_download, remove_track,
     replace_playlist_order, set_playlist_sort, set_track_favorite, start_media_download,
     update_media_downloader, update_playlist, update_track_metadata, LibraryState, PlaylistState,
 };
@@ -49,6 +49,7 @@ pub fn run() {
             import_bundle,
             list_tracks,
             load_artwork_data_uri,
+            record_playback,
             set_track_favorite,
             remove_track,
             update_track_metadata,

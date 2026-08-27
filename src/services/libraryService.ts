@@ -9,6 +9,7 @@ export interface LibraryService {
   setFavorite(id: string, favorite: boolean): Promise<LibraryTrack>;
   removeTrack(id: string): Promise<void>;
   updateMetadata(id: string, metadata: TrackMetadataUpdate): Promise<LibraryTrack>;
+  recordPlayback(id: string, playlistId: string | null): Promise<LibraryTrack>;
   addToPlaylist(trackId: string, playlistId: string, playlistName: string): Promise<void>;
 }
 
@@ -40,6 +41,10 @@ class TauriLibraryService implements LibraryService {
 
   updateMetadata(id: string, metadata: TrackMetadataUpdate): Promise<LibraryTrack> {
     return invoke<LibraryTrack>('update_track_metadata', { id, metadata });
+  }
+
+  recordPlayback(id: string, playlistId: string | null): Promise<LibraryTrack> {
+    return invoke<LibraryTrack>('record_playback', { id, playlistId });
   }
 
   addToPlaylist(trackId: string, playlistId: string, playlistName: string): Promise<void> {

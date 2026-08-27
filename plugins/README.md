@@ -75,6 +75,10 @@ Os arquivos seguem os mesmos papéis do plugin anterior. `models.rs` define item
 
 Bibliotecas principais: Media3 ExoPlayer e Session 1.7.1, AndroidX, AppCompat, Material, Tauri Android e JUnit. O Gradle atual contém declarações de Core KTX em mais de uma versão; Gradle resolve a versão efetiva, mas isso deve ser consolidado numa manutenção futura.
 
+## `media-downloader`
+
+Responsável por baixar mídia autorizada por meio do yt-dlp Android, sem decidir regras de catálogo ou playlists. O módulo declara `org.tukaani:xz:1.5` explicitamente: `commons-compress:1.12`, dependência transitiva do yt-dlp Android 0.18.1, trata XZ como opcional, mas o R8 da variante release precisa das classes para concluir a minificação.
+
 ## Permissões
 
 - Cada plugin possui `permissions/default.toml`, comandos autorizados gerados e schema JSON.

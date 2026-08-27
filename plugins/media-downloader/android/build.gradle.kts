@@ -22,6 +22,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
+    implementation("org.tukaani:xz:1.5")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
     implementation(project(":tauri-android"))

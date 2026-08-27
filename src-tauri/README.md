@@ -115,8 +115,8 @@ Esse módulo deve permanecer compilável/testável sem Tauri sempre que possíve
 
 ### Repositories
 
-- `sqlite_track_repository.rs`: SQL do catálogo, busca/listagem, importação idempotente, favoritos, edição e remoção.
-- `sqlite_playlist_repository.rs`: SQL de playlists e relações, agregados, ordenações, posições e transações. A comparação de título, artista e álbum normaliza case e diacríticos antes de ordenar, mantendo campos vazios no final.
+- `sqlite_track_repository.rs`: SQL do catálogo, busca/listagem, importação idempotente, favoritos, registro de reprodução, edição e remoção. A listagem recente é ordenada pelo índice de última reprodução.
+- `sqlite_playlist_repository.rs`: SQL de playlists e relações, agregados, ordenações, posições e transações. A comparação de título, artista e álbum normaliza case e diacríticos antes de ordenar, mantendo campos vazios no final; a listagem recente usa a última reprodução persistida.
 
 Somente implementações de repository devem conhecer tabelas e consultas. Retorne entidades do domínio, não rows/crates SQLite para a interface.
 
@@ -125,6 +125,7 @@ Somente implementações de repository devem conhecer tabelas e consultas. Retor
 - `0001_tracks.sql`: tabela base de músicas e seus metadados/origem.
 - `0002_track_actions.sql`: favorito, playlists e relacionamento música-playlist.
 - `0003_playlist_details.sql`: descrição, capa, preferência de ordenação, posição customizada e versão de concorrência.
+- `0005_recent_playback.sql`: última reprodução de playlist e índices para ordenação recente de faixas/playlists.
 
 Regras obrigatórias:
 

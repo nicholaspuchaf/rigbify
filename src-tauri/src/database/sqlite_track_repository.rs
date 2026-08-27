@@ -11,6 +11,7 @@ const MIGRATION_0001: &str = include_str!("migrations/0001_tracks.sql");
 const MIGRATION_0002: &str = include_str!("migrations/0002_track_actions.sql");
 const MIGRATION_0003: &str = include_str!("migrations/0003_playlist_details.sql");
 const MIGRATION_0004: &str = include_str!("migrations/0004_download_origins.sql");
+const MIGRATION_0005: &str = include_str!("migrations/0005_recent_playback.sql");
 
 pub struct SqliteTrackRepository {
     pub(crate) connection: Connection,
@@ -47,6 +48,9 @@ impl SqliteTrackRepository {
         }
         if version < 4 {
             transaction.execute_batch(MIGRATION_0004)?;
+        }
+        if version < 5 {
+            transaction.execute_batch(MIGRATION_0005)?;
         }
         transaction.commit()?;
         Ok(Self { connection })
@@ -123,7 +127,7 @@ impl TrackRepository for SqliteTrackRepository {
     fn list(&self) -> AppResult<Vec<Track>> {
         let mut statement = self
             .connection
-            .prepare("SELECT * FROM tracks ORDER BY added_at DESC, title COLLATE NOCASE")?;
+            .prepare("SELECT * FROM tracks ORDER BY last_played_at IS NULL, last_played_at DESC, added_at DESC, id")?;
         let tracks = statement
             .query_map([], Self::read_track)?
             .collect::<Result<Vec<_>, _>>()?;
@@ -141,6 +145,17 @@ impl TrackRepository for SqliteTrackRepository {
         let changed = self.connection.execute(
             "UPDATE tracks SET favorite = ?2, updated_at = ?3 WHERE id = ?1",
             params![id, favorite, updated_at],
+        )?;
+        if changed == 0 {
+            return Err(AppError::TrackNotFound);
+        }
+        self.find_by_id(id)?.ok_or(AppError::TrackNotFound)
+    }
+
+    fn record_playback(&mut self, id: &str, played_at: i64) -> AppResult<Track> {
+        let changed = self.connection.execute(
+            "UPDATE tracks SET last_played_at = ?2, play_count = play_count + 1 WHERE id = ?1",
+            params![id, played_at],
         )?;
         if changed == 0 {
             return Err(AppError::TrackNotFound);
@@ -281,6 +296,23 @@ mod tests {
     }
 
     #[test]
+    fn lists_the_most_recently_played_track_first() {
+        let mut repository = SqliteTrackRepository::in_memory().expect("database");
+        let first = repository
+            .upsert(&track("content://1", "First", 1))
+            .expect("insert");
+        repository
+            .upsert(&track("content://2", "Second", 2))
+            .expect("insert");
+
+        let played = repository.record_playback(&first.id, 3).expect("played");
+        let tracks = repository.list().expect("list");
+
+        assert_eq!(played.play_count, 1);
+        assert_eq!(tracks[0].id, first.id);
+    }
+
+    #[test]
     fn updates_metadata_and_adds_track_to_playlist() {
         let mut repository = SqliteTrackRepository::in_memory().expect("database");
         let saved = repository
@@ -328,7 +360,7 @@ mod tests {
                 |row| row.get(0),
             )
             .expect("column");
-        assert_eq!(version, 4);
+        assert_eq!(version, 5);
         assert_eq!(sort_mode, "'custom'");
     }
 }

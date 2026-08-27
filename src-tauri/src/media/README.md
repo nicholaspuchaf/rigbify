@@ -84,7 +84,7 @@ O registro persistido deve possuir, no mínimo:
 | `genre` | string opcional | Gênero informado nos metadados |
 | `added_at` | timestamp | Data de inclusão na biblioteca |
 | `updated_at` | timestamp | Última atualização dos metadados |
-| `last_played_at` | timestamp opcional | Última reprodução |
+| `last_played_at` | timestamp opcional | Última reprodução; índice da ordenação recente de faixas |
 | `play_count` | inteiro | Quantidade de reproduções concluídas |
 | `favorite` | boolean | Estado de favorito |
 | `availability` | enum/string | Disponível, ausente, baixando ou com erro |
@@ -217,7 +217,7 @@ Contratos principais:
 - `SqlitePlaylistRepository`: transações, ordenação e controle de versão.
 - `playlistService.ts`: única fronteira da interface com os comandos nativos.
 
-Toda alteração de schema exige migration incremental. Uma migration já aplicada nunca deve ser editada.
+Toda alteração de schema exige migration incremental. Uma migration já aplicada nunca deve ser editada. A migration `0005_recent_playback.sql` também persiste a última reprodução da playlist e cria índices para a ordenação recente no SQLite, evitando ordenar toda a biblioteca na WebView.
 
 ## Player Android
 

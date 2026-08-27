@@ -13,3 +13,4 @@
 | [ISSUE-0008](ISSUE-0008-uso-de-armazenamento-estatico.md) | resolvida | média | Uso de armazenamento em Configurações é estático | interface / biblioteca |
 | [ISSUE-0009](ISSUE-0009-feito-para-voce-nao-abre.md) | resolvida | alta | Cards de Feito para você não abrem a playlist | Home / navegação |
 | [ISSUE-0010](ISSUE-0010-capas-importadas-nao-renderizadas.md) | em validação | média | Capas importadas não são renderizadas | interface |
+| [ISSUE-0011](ISSUE-0011-build-release-arm64-falha-no-r8.md) | em andamento | alta | Build release ARM64 falha no R8 por classes XZ ausentes | downloads / Android |

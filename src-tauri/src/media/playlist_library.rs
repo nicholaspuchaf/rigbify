@@ -25,6 +25,13 @@ impl<R: PlaylistRepository> PlaylistLibrary<R> {
     pub fn list(&self) -> AppResult<Vec<Playlist>> {
         self.repository.list()
     }
+
+    pub fn record_playback(&mut self, id: &str, now: i64) -> AppResult<()> {
+        if id.trim().is_empty() {
+            return Err(AppError::InvalidPlaylist("id ausente".into()));
+        }
+        self.repository.record_playback(id, now)
+    }
     pub fn details(&self, id: &str) -> AppResult<PlaylistDetails> {
         self.repository.details(&required(id.to_string(), "id")?)
     }

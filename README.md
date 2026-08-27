@@ -49,6 +49,7 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 - Telas Home, Busca, Biblioteca, detalhe de álbum/artista, Playlist, Adicionar músicas, Editar playlist, Player e Configurações.
 - Navegação inferior, mini player, cards, linhas de música e menu de ações reutilizáveis.
 - Home com recomendações locais navegáveis, músicas adicionadas recentemente e seção Mais tocadas baseada no contador persistido da biblioteca.
+- Em **Recentes** na Biblioteca, músicas e playlists são ordenadas no SQLite pela última reprodução; o app não reordena a biblioteca inteira na memória.
 - Histórico interno integrado ao botão/gesto Voltar do Android; o app só é encerrado quando a Home é a raiz ativa.
 - Layout escuro, mobile-first, inspirado nas referências de [`design/`](design/README.md), incluindo fundo inicial escuro antes do carregamento do Svelte.
 - Service Worker simples para o shell web em builds de produção.
@@ -313,6 +314,7 @@ As migrations são aplicadas em ordem ao abrir o banco:
 2. `0002_track_actions.sql`: favoritos e estrutura inicial de playlists/relações.
 3. `0003_playlist_details.sql`: descrição, capa, ordenação, posições e versão.
 4. `0004_download_origins.sql`: URL da página e ID externo para músicas obtidas por download.
+5. `0005_recent_playback.sql`: última reprodução de playlists e índices para ordenação recente de músicas e playlists.
 
 Nunca altere uma migration já aplicada. Crie o próximo arquivo numerado, faça a mudança de forma transacional e teste tanto banco vazio quanto upgrade.
 

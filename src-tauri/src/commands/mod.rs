@@ -9,7 +9,7 @@ pub use downloads::{
 };
 pub use media::{
     add_track_to_playlist, import_bundle, import_track, list_tracks, load_artwork_data_uri,
-    remove_track, set_track_favorite, update_track_metadata, LibraryState,
+    record_playback, remove_track, set_track_favorite, update_track_metadata, LibraryState,
 };
 pub use playlists::{
     add_tracks_to_playlist, create_playlist, delete_playlist, get_playlist, list_playlists,
