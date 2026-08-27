@@ -1,4 +1,4 @@
-export type View = 'home' | 'search' | 'library' | 'settings' | 'player' | 'playlist' | 'playlist-add' | 'playlist-edit' | 'downloads';
+export type View = 'home' | 'search' | 'library' | 'library-collection' | 'settings' | 'player' | 'playlist' | 'playlist-add' | 'playlist-edit' | 'downloads';
 
 export type Track = {
   id: string;
@@ -8,6 +8,7 @@ export type Track = {
   duration: number;
   hue: number;
   favorite?: boolean;
+  playCount?: number;
   sourceUri?: string;
   artworkUri?: string;
 };
@@ -18,4 +19,5 @@ export type Collection = {
   subtitle: string;
   hue: number;
   type: 'playlist' | 'album' | 'artist';
+  trackIds?: string[];
 };

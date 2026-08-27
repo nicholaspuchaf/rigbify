@@ -1,10 +1,12 @@
 use std::{
+    fs,
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde::Serialize;
-use tauri::{AppHandle, Runtime, State};
+use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_media_source::MediaSourceExt;
 
 use super::playlists::PlaylistState;
@@ -139,6 +141,56 @@ pub fn import_bundle<R: Runtime>(
 #[tauri::command]
 pub fn list_tracks(state: State<'_, LibraryState>) -> Result<Vec<Track>, String> {
     with_library(&state, |library| library.list())
+}
+
+#[tauri::command]
+pub fn load_artwork_data_uri<R: Runtime>(
+    app: AppHandle<R>,
+    uri: String,
+) -> Result<Option<String>, String> {
+    let Ok(url) = url::Url::parse(&uri) else {
+        return Ok(None);
+    };
+    let Ok(path) = url.to_file_path() else {
+        return Ok(None);
+    };
+    let artwork_dir = app
+        .path()
+        .app_cache_dir()
+        .map_err(|error| format!("cache de capas indisponível: {error}"))?
+        .join("artwork");
+    let Ok(artwork_dir) = artwork_dir.canonicalize() else {
+        return Ok(None);
+    };
+    let Ok(path) = path.canonicalize() else {
+        return Ok(None);
+    };
+    if !path.starts_with(&artwork_dir) {
+        return Ok(None);
+    }
+    let bytes = fs::read(path).map_err(|error| format!("não foi possível ler a capa: {error}"))?;
+    if bytes.is_empty() || bytes.len() > 10 * 1024 * 1024 {
+        return Ok(None);
+    }
+    Ok(Some(format!(
+        "data:{};base64,{}",
+        artwork_mime_type(&bytes),
+        STANDARD.encode(bytes)
+    )))
+}
+
+fn artwork_mime_type(bytes: &[u8]) -> &'static str {
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        "image/jpeg"
+    } else if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        "image/png"
+    } else if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+        "image/gif"
+    } else if bytes.starts_with(b"RIFF") && bytes.get(8..12) == Some(b"WEBP") {
+        "image/webp"
+    } else {
+        "application/octet-stream"
+    }
 }
 
 #[tauri::command]

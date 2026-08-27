@@ -27,7 +27,7 @@ screens ─────► services ─────► @tauri-apps/api ───
 ### Arquivos raiz
 
 - `main.ts`: ponto de entrada. Monta `App` no elemento raiz e registra `/sw.js` somente em produção.
-- `App.svelte`: composição principal e coordenador da navegação. Mantém tela atual, histórico interno compatível com o botão Voltar do Android, faixa ativa, origem da fila, atualização da biblioteca e abertura dos fluxos de playlist/player.
+- `App.svelte`: composição principal e coordenador da navegação. Mantém tela atual, histórico interno compatível com o botão Voltar do Android, faixa ativa, origem da fila, atualização da biblioteca, grupos de álbum/artista e abertura dos fluxos de playlist/player.
 - `style.css`: tokens visuais globais, reset, base tipográfica, cores, superfícies, largura mobile e utilitários compartilhados. Evite colocar aqui estilo exclusivo de uma única tela.
 - `vite-env.d.ts`: tipos de ambiente fornecidos pelo Vite.
 
@@ -35,7 +35,7 @@ screens ─────► services ─────► @tauri-apps/api ───
 
 Componentes reutilizáveis e predominantemente apresentacionais:
 
-- `Artwork.svelte`: representação de capa e fallback visual.
+- `Artwork.svelte`: solicita ao serviço a representação `data:` de uma capa local do cache privado e mantém fallback visual quando ela estiver ausente ou falhar ao carregar.
 - `Avatar.svelte`: avatar circular usado no cabeçalho.
 - `BottomNavigation.svelte`: navegação entre áreas principais.
 - `ChipBar.svelte`: filtros/atalhos horizontais selecionáveis.
@@ -54,14 +54,15 @@ Regra: componentes recebem dados por props e comunicam intenções por callbacks
 
 Telas coordenam componentes e casos de uso:
 
-- `HomeScreen.svelte`: saudação, filtros, coleções navegáveis, recomendações e acesso à reprodução.
+- `HomeScreen.svelte`: saudação, filtros, coleções navegáveis, cards de recomendações que abrem playlists, mais tocadas e acesso à reprodução.
 - `SearchScreen.svelte`: termo de busca, resultados e descoberta visual.
-- `LibraryScreen.svelte`: importação, filtros da biblioteca, ações de faixa e entrada para playlists.
+- `LibraryScreen.svelte`: importação, filtros da biblioteca, ações de faixa, ordenação persistida de playlists e entrada para playlists, álbuns e artistas.
+- `LibraryCollectionScreen.svelte`: detalhe de álbum ou artista, limitado às respectivas faixas da biblioteca.
 - `PlaylistScreen.svelte`: detalhe, ações administrativas, ordenação, reordenação, remoção e play/pause sincronizado da playlist.
 - `PlaylistAddScreen.svelte`: busca, filtros e inclusão imediata de músicas, com progresso, erro contextual e conclusão do fluxo.
 - `PlaylistEditScreen.svelte`: nome, descrição e referência de capa.
 - `PlayerScreen.svelte`: faixa ativa, progresso, controles nativos, fila e menu compartilhado.
-- `SettingsScreen.svelte`: grupos e preferências visuais atuais.
+- `SettingsScreen.svelte`: grupos e preferências visuais atuais, incluindo o resumo calculado de músicas e armazenamento conhecido.
 
 Screens podem manter estado efêmero de formulário e carregamento. Estado persistente deve vir dos services/backend. Toda operação assíncrona deve representar carregamento, erro e atualização posterior de forma consistente.
 
@@ -72,7 +73,12 @@ Fronteira de efeitos e contratos do frontend:
 - `libraryService.ts`: lista/importa músicas, altera favorito/metadados, remove do catálogo e oferece fallback web.
 - `playerService.ts`: converte músicas em itens da fila e expõe play, pause, seek, anterior, próxima, stop e leitura do estado; no navegador usa estado mockado.
 - `playlistService.ts`: CRUD, detalhes, adição/remoção, ordenação e reordenação de playlists, incluindo fallback em memória no navegador.
+- `libraryCollections.ts`: agrupamento e ordenação puros de álbuns, artistas e playlists para a UI.
+- `homeRecommendations.ts`: ordenação pura das faixas mais tocadas para a Home.
+- `navigation.ts`: estratégia de retorno explícita para cada tela; novos destinos exigem declarar seu fallback.
+- `storageUsage.ts`: soma e formata os tamanhos conhecidos das músicas para Configurações.
 - `trackMapper.ts`: função pura que converte registros da biblioteca para o modelo visual `Track`.
+- `artworkService.ts`: solicita ao comando nativo uma representação `data:` de capas do cache privado; a URI `file://` original continua exclusiva do player nativo.
 - `*.test.ts`: testes unitários adjacentes aos respectivos serviços/mapeadores.
 
 Somente services devem conhecer nomes de comandos Tauri e diferenças entre navegador e aplicativo. Preserve os payloads em `camelCase` na interface e faça qualquer adaptação de contrato num único lugar.
@@ -118,6 +124,12 @@ A screen entrega faixa e contexto ao `playerService` → o serviço monta uma fi
 ### Playlist
 
 Screens usam somente `playlistService`. A versão retornada no detalhe acompanha mutações para detectar concorrência. Depois de adicionar, remover, reordenar ou editar, use a resposta oficial ou recarregue; não mantenha uma cópia divergente indefinidamente.
+
+### Biblioteca, coleções e navegação
+
+Álbuns e artistas são agregados no frontend a partir dos metadados já persistidos, sem duplicar dados no banco. Metadados ausentes usam os rótulos consistentes `Álbum desconhecido` e `Artista desconhecido`. A preferência de ordenação da lista de playlists é uma preferência visual pequena, persistida no navegador sob a chave `rigbyfy.playlist-sort`; nenhum áudio ou metadado de biblioteca é colocado no `localStorage`.
+
+Cada valor de `View` possui uma estratégia declarada em `navigation.ts`. O botão físico Voltar usa o histórico do navegador quando disponível, e somente a Home permite a saída nativa.
 
 ## Padrão de implementação
 

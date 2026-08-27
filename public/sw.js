@@ -1,5 +1,5 @@
-const CACHE = 'rigbyfy-v2';
-const SHELL = ['/', '/index.html', '/icon.svg', '/manifest.webmanifest'];
+const CACHE = 'rigbyfy-v3';
+const SHELL = ['/', '/index.html', '/icon.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

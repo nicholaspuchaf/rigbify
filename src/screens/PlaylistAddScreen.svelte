@@ -68,7 +68,7 @@
   <div>
     {#each visible as track (track.id)}
       <div class="add-track-row">
-        <Artwork hue={track.hue} label="" />
+        <Artwork hue={track.hue} src={track.artworkUri} label="" />
         <span><b>{track.title}</b><small>{track.artist} · {track.album}</small></span>
         <button
           class:selected={isAdded(track.id)}

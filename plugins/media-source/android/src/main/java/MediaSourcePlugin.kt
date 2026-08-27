@@ -123,6 +123,11 @@ class MediaSourcePlugin(private val activity: Activity) : Plugin(activity) {
                 }
                 val fileName = relativeFile.substringAfterLast('/')
                 val extension = fileName.substringAfterLast('.', "").lowercase()
+                val artworkUri = if (value.isNull("artwork")) null else {
+                    value.optString("artwork").trim().takeIf { it.isNotEmpty() }
+                        ?.let { bundleUri(treeUri, it) }
+                        ?.let(::cacheArtwork)
+                }
                 add(
                     SelectedTrack(
                         sourceType = "local_document",
@@ -133,7 +138,7 @@ class MediaSourcePlugin(private val activity: Activity) : Plugin(activity) {
                         artist = value.optString("artist").takeIf { it.isNotBlank() },
                         album = value.optString("album").takeIf { it.isNotBlank() },
                         durationMs = value.optLong("duration_ms", 0),
-                        artworkUri = null,
+                        artworkUri = artworkUri,
                         mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension),
                         fileSize = null,
                         trackNumber = null,
@@ -234,7 +239,43 @@ class MediaSourcePlugin(private val activity: Activity) : Plugin(activity) {
         val directory = File(activity.cacheDir, "artwork").apply { mkdirs() }
         val digest = MessageDigest.getInstance("SHA-256").digest(uri.toString().toByteArray())
         val name = digest.take(12).joinToString("") { "%02x".format(it) }
-        return File(directory, "$name.image").apply { writeBytes(bytes) }.toURI().toString()
+        return Uri.fromFile(File(directory, "$name.image").apply { writeBytes(bytes) }).toString()
+    }
+
+    private fun cacheArtwork(uri: Uri): String? {
+        val directory = File(activity.cacheDir, "artwork").apply { mkdirs() }
+        val digest = MessageDigest.getInstance("SHA-256").digest(uri.toString().toByteArray())
+        val name = digest.take(12).joinToString("") { "%02x".format(it) }
+        val extension = activity.contentResolver.getType(uri)
+            ?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
+            ?.takeIf { it.isNotBlank() }
+            ?.let { ".${it.lowercase()}" }
+            ?: ".image"
+        val destination = File(directory, "$name$extension")
+        if (destination.isFile) return Uri.fromFile(destination).toString()
+
+        val temporary = File(directory, "$name$extension.tmp")
+        return try {
+            activity.contentResolver.openInputStream(uri)?.use { input ->
+                temporary.outputStream().use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var total = 0L
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        if (total > MAX_ARTWORK_BYTES) throw IllegalArgumentException("Capa maior que o limite permitido")
+                        output.write(buffer, 0, count)
+                    }
+                }
+            } ?: return null
+            if (!temporary.renameTo(destination)) throw IllegalStateException("Não foi possível armazenar a capa")
+            Uri.fromFile(destination).toString()
+        } catch (error: Exception) {
+            temporary.delete()
+            Log.w(TAG, "Não foi possível armazenar uma capa do bundle", error)
+            null
+        }
     }
 
     override fun onDestroy() {

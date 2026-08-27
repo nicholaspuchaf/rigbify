@@ -46,11 +46,13 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 
 ### Interface
 
-- Telas Home, Busca, Biblioteca, Playlist, Adicionar músicas, Editar playlist, Player e Configurações.
+- Telas Home, Busca, Biblioteca, detalhe de álbum/artista, Playlist, Adicionar músicas, Editar playlist, Player e Configurações.
 - Navegação inferior, mini player, cards, linhas de música e menu de ações reutilizáveis.
+- Home com recomendações locais navegáveis, músicas adicionadas recentemente e seção Mais tocadas baseada no contador persistido da biblioteca.
 - Histórico interno integrado ao botão/gesto Voltar do Android; o app só é encerrado quando a Home é a raiz ativa.
-- Layout escuro, mobile-first, inspirado nas referências de [`design/`](design/README.md).
+- Layout escuro, mobile-first, inspirado nas referências de [`design/`](design/README.md), incluindo fundo inicial escuro antes do carregamento do Svelte.
 - Service Worker simples para o shell web em builds de produção.
+- Ícone de produção de fones/equalizador em PNG, com formatos desktop, iOS e Android regenerados.
 
 ### Downloads autorizados
 
@@ -68,7 +70,7 @@ Rigbyfy é um player de músicas locais, mobile-first e offline, construído com
 - O build APK completo depois das mudanças mais recentes foi interrompido antes da conclusão e deve ser repetido em aparelho real.
 - Bluetooth, chamadas, perda de foco, economia de bateria e restauração após encerramento do processo ainda exigem testes completos em dispositivos reais.
 - Reordenação de playlist usa botões; gesto de arrastar ainda não existe.
-- Capas extraídas são persistidas como referência, mas nem todas as telas ainda as renderizam.
+- Capas extraídas ou recebidas no bundle são persistidas como referência e renderizadas nas faixas e no player. Capas de bundles são copiadas com limite de 10 MiB ao cache privado e mantêm uma URI de arquivo local, utilizada pela interface e pelo player nativo; referências indisponíveis usam um fallback visual.
 - Histórico, fila persistente entre reinícios, downloads de playlists e compartilhamento `ACTION_SEND` são evoluções planejadas.
 - O downloader aceita somente mídia individual e salva no armazenamento privado do app; exportação para Downloads/MediaStore ainda não está exposta.
 - A política CSP está desabilitada em `tauri.conf.json` durante esta fase e deve ser endurecida antes de distribuição.
@@ -180,6 +182,8 @@ rigbyfy/
 │   ├── media-source/       # seletor e metadados locais
 │   ├── media-player/       # reprodução nativa Android
 │   └── media-downloader/   # yt-dlp/Python/FFmpeg
+├── docs/
+│   └── issues/             # backlog local versionado: índice, template e registros
 ├── public/
 │   ├── README.md
 │   └── sw.js

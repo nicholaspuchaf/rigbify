@@ -11,7 +11,7 @@ cp .env.example .env
 # edite .env e preencha YOUTUBE_API_KEY
 ```
 
-O script lê essa variável sem exibi-la e sem substituir uma variável já exportada no shell.
+O script lê essas variáveis sem exibi-las e sem substituir uma variável já exportada no shell. Configure a chave principal em `YOUTUBE_API_KEY` e as reservas em `YOUTUBE_API_KEY1`, `YOUTUBE_API_KEY2` e assim por diante (ou use `YOUTUBE_API_KEYS` separado por vírgulas). Quando a API retornar quota esgotada, a descoberta repete a mesma requisição com a próxima chave, sem registrar material secreto. Se todas esgotarem, a execução falha com uma mensagem genérica e preserva as escolhas já gravadas.
 
 ## Fluxo
 
@@ -59,6 +59,17 @@ O script lê essa variável sem exibi-la e sem substituir uma variável já expo
    uv run rigbyfy_import.py verify
    ```
 
+   Se o YouTube solicitar confirmação anti-bot, exporte os cookies da sua sessão autenticada no formato Netscape e salve-os como `.cookie.txt` nesta pasta `temp/`. O arquivo é local, ignorado pelo Git e usado automaticamente pelo `yt-dlp`; nunca o envie nem o versione. O downloader também habilita o runtime Node e busca o componente oficial de resolução JavaScript do `yt-dlp` quando necessário.
+
+   Para completar somente as capas das faixas cujo áudio já está no bundle, sem baixar áudio adicional, use `--artwork-only`:
+
+   ```bash
+   uv run rigbyfy_import.py download \
+     --playlist "Rock brabo" \
+     --authorize "Rock brabo" \
+     --artwork-only
+   ```
+
 4. Se o teste estiver correto, retome a mesma playlist ou escolha outra nos próximos dias. Faixas já baixadas são ignoradas automaticamente:
 
    ```bash
@@ -74,7 +85,7 @@ O script lê essa variável sem exibi-la e sem substituir uma variável já expo
    uv run rigbyfy_import.py push
    ```
 
-O bundle é enviado para `/sdcard/Download/Rigbyfy-import`.
+O bundle é enviado para `/sdcard/Musics/rigify/imports`, a pasta que deve ser selecionada no Rigbyfy.
 
 ## Estrutura gerada
 
@@ -82,13 +93,14 @@ O bundle é enviado para `/sdcard/Download/Rigbyfy-import`.
 Rigbyfy-import/
 ├── manifest.json  # playlists, metadados e referência de cada arquivo
 ├── sources.csv    # fila revisável de URLs autorizadas
-└── audio/         # arquivos baixados
+├── audio/         # arquivos baixados
+└── artwork/       # thumbnails HTTPS obtidas da mídia, referenciadas pelo manifesto
 ```
 
-`manifest.json` é escrito de forma atômica após cada download. A operação `push` exige `adb` disponível no PATH e um aparelho com depuração USB autorizada. Para tentar novamente uma faixa já baixada, passe `--retry` explicitamente.
+`manifest.json` é escrito de forma atômica após cada download. Cada download também busca a thumbnail HTTPS informada pelo yt-dlp, limita a imagem a 10 MiB e registra o caminho relativo em `artwork`. Em execuções futuras, uma faixa já baixada mas sem capa baixa somente a thumbnail, sem repetir o áudio. A operação `push` exige `adb` disponível no PATH e um aparelho com depuração USB autorizada. Para tentar novamente uma faixa já baixada, passe `--retry` explicitamente.
 
 Se executar `prepare` novamente, as URLs já preenchidas em `sources.csv` são preservadas. CSVs que não tenham o cabeçalho de exportação do Spotify são ignorados com um aviso.
 
-## Limitação atual do aplicativo
+## Importação no aplicativo
 
-O Rigbyfy ainda não possui a tela nativa que lê esse bundle e recria as playlists automaticamente. O bundle e o envio ADB estão prontos; o próximo passo no aplicativo é implementar o importador de `manifest.json`, que registrará os áudios na biblioteca e criará as playlists no SQLite por meio das APIs normais, sem escrever no banco diretamente.
+No Rigbyfy, abra **Biblioteca → Importar bundle** e selecione `Musics/rigify/imports`. O aplicativo lê o manifesto, atualiza as músicas pelo identificador de origem e recria as relações de playlists sem duplicá-las. As capas em `artwork/` são associadas às faixas na próxima importação.

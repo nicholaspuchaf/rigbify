@@ -9,6 +9,7 @@
 ```text
 public/
 ├── README.md
+├── icon.png
 └── sw.js
 ```
 
@@ -16,8 +17,8 @@ public/
 
 Service Worker registrado por `src/main.ts` apenas em produção. Ele:
 
-- usa o cache versionado `rigbyfy-v2`;
-- pré-carrega `/`, `/index.html`, `/manifest.webmanifest` e `/icon.svg` durante `install`;
+- usa o cache versionado `rigbyfy-v3`;
+- pré-carrega `/`, `/index.html`, `/manifest.webmanifest` e `/icon.png` durante `install`;
 - remove caches Rigbyfy antigos no `activate`;
 - intercepta as requisições `GET` vistas pelo escopo do worker;
 - tenta a rede primeiro e atualiza o cache quando recebe uma resposta válida;
@@ -30,7 +31,7 @@ Esse cache atende o shell web. Ele não armazena a biblioteca musical, URIs Andr
 - Vite copia os arquivos desta pasta no build.
 - `src/main.ts` depende da URL `/sw.js` e da API `navigator.serviceWorker`.
 - `sw.js` depende das APIs padrão Service Worker, Fetch e Cache Storage.
-- Os caminhos pré-carregados dependem dos arquivos raiz `index.html`, `manifest.webmanifest` e `icon.svg`.
+- Os caminhos pré-carregados dependem dos arquivos raiz `index.html`, `manifest.webmanifest` e `icon.png`.
 
 ## Regras para alterações
 

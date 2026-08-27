@@ -23,15 +23,25 @@ from typing import Any
 from difflib import SequenceMatcher
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 CSV_COLUMNS = {
     "Track URI", "Track Name", "Album Name", "Artist Name(s)", "Duration (ms)"
 }
 MANIFEST_NAME = "manifest.json"
+COOKIE_FILE_NAME = ".cookie.txt"
+ANDROID_BUNDLE_DIRECTORY = "/sdcard/Musics/rigify/imports"
 YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3"
 REJECTED_TITLE_MARKERS = {"cover", "live", "remix", "slowed", "nightcore", "karaoke"}
+MAX_ARTWORK_BYTES = 10 * 1024 * 1024
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+IMAGE_EXTENSIONS_BY_MIME = {
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
 
 
 def load_dotenv(path: Path) -> None:
@@ -61,6 +71,7 @@ class Track:
     album: str
     duration_ms: int | None
     file: str | None = None
+    artwork: str | None = None
     source_url: str | None = None
     status: str = "missing_source"
 
@@ -209,6 +220,79 @@ def allowed_source_url(value: str) -> bool:
     return parsed.scheme == "https" and bool(parsed.netloc)
 
 
+def local_cookie_file(directory: Path | None = None) -> Path | None:
+    """Retorna o arquivo de cookies local sem expor seu conteúdo."""
+    base_dir = directory or Path(__file__).parent
+    candidate = base_dir / COOKIE_FILE_NAME
+    return candidate if candidate.is_file() and candidate.stat().st_size > 0 else None
+
+
+def youtube_download_options(output_template: str, cookie_file: Path | None) -> dict[str, Any]:
+    """Configuração do yt-dlp compatível com os desafios atuais do YouTube."""
+    options: dict[str, Any] = {
+        "format": "bestaudio[ext=m4a]/bestaudio/best",
+        "outtmpl": output_template,
+        "noplaylist": True,
+        "no_warnings": False,
+        "quiet": False,
+        "addmetadata": True,
+        "js_runtimes": {"node": {"path": None}},
+        "remote_components": ["ejs:github"],
+    }
+    if cookie_file:
+        options["cookiefile"] = str(cookie_file)
+    return options
+
+
+@dataclass
+class YoutubeKeyPool:
+    keys: list[str]
+    index: int = 0
+
+    def current(self) -> str:
+        return self.keys[self.index]
+
+    def advance(self) -> bool:
+        if self.index + 1 >= len(self.keys):
+            return False
+        self.index += 1
+        return True
+
+
+def configured_youtube_keys(explicit_keys: str | None = None) -> list[str]:
+    if explicit_keys:
+        values = explicit_keys.split(",")
+    else:
+        names = ["YOUTUBE_API_KEY", "YOUTUBE_API_KEYS"]
+        names.extend(sorted(
+            (name for name in os.environ if re.fullmatch(r"YOUTUBE_API_KEY\d+", name)),
+            key=lambda name: int(name.removeprefix("YOUTUBE_API_KEY")),
+        ))
+        values = [value for name in names for value in os.environ.get(name, "").split(",")]
+    keys = []
+    for value in values:
+        key = clean(value)
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
+def quota_exhausted(error: HTTPError, detail: str) -> bool:
+    if error.code == 429:
+        return True
+    if error.code != 403:
+        return False
+    try:
+        reasons = {
+            clean(item.get("reason")).casefold()
+            for item in json.loads(detail).get("error", {}).get("errors", [])
+            if isinstance(item, dict)
+        }
+    except json.JSONDecodeError:
+        reasons = set()
+    return bool(reasons & {"quotaexceeded", "dailylimitexceeded", "userratelimitexceeded", "ratelimitexceeded"})
+
+
 def normalized(value: str | None) -> str:
     decomposed = unicodedata.normalize("NFKD", clean(value))
     without_accents = "".join(character for character in decomposed if not unicodedata.combining(character))
@@ -248,25 +332,31 @@ def candidate_score(track: dict[str, Any], candidate: dict[str, Any]) -> tuple[i
     return score, "; ".join(checks)
 
 
-def youtube_api_get(resource: str, params: dict[str, str], api_key: str) -> dict[str, Any]:
-    query = urlencode({**params, "key": api_key})
-    request_url = f"{YOUTUBE_API_URL}/{resource}?{query}"
-    try:
-        with urlopen(request_url, timeout=20) as response:  # noqa: S310 - endpoint constante da API oficial
-            return json.loads(response.read().decode("utf-8"))
-    except HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")[:500]
-        raise RuntimeError(f"YouTube Data API respondeu HTTP {error.code}: {detail}") from error
-    except URLError as error:
-        raise RuntimeError(f"não foi possível alcançar a YouTube Data API: {error.reason}") from error
+def youtube_api_get(resource: str, params: dict[str, str], keys: YoutubeKeyPool) -> dict[str, Any]:
+    while True:
+        query = urlencode({**params, "key": keys.current()})
+        request_url = f"{YOUTUBE_API_URL}/{resource}?{query}"
+        try:
+            with urlopen(request_url, timeout=20) as response:  # noqa: S310 - endpoint constante da API oficial
+                return json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            detail = error.read().decode("utf-8", errors="replace")[:500]
+            if quota_exhausted(error, detail) and keys.advance():
+                print("Quota da chave atual atingida; alternando para a próxima chave.", file=sys.stderr)
+                continue
+            if quota_exhausted(error, detail):
+                raise RuntimeError("todas as chaves da YouTube Data API atingiram o limite de quota") from error
+            raise RuntimeError(f"YouTube Data API respondeu HTTP {error.code}: {detail}") from error
+        except URLError as error:
+            raise RuntimeError(f"não foi possível alcançar a YouTube Data API: {error.reason}") from error
 
 
-def youtube_candidates(track: dict[str, Any], api_key: str, candidate_limit: int) -> list[dict[str, Any]]:
+def youtube_candidates(track: dict[str, Any], keys: YoutubeKeyPool, candidate_limit: int) -> list[dict[str, Any]]:
     query = " ".join(filter(None, [clean(track.get("artist")), clean(track.get("title")), clean(track.get("album"))]))
     search = youtube_api_get(
         "search",
         {"part": "snippet", "q": query, "type": "video", "maxResults": str(candidate_limit)},
-        api_key,
+        keys,
     )
     identifiers = [item.get("id", {}).get("videoId") for item in search.get("items", [])]
     video_ids = [identifier for identifier in identifiers if isinstance(identifier, str)]
@@ -275,7 +365,7 @@ def youtube_candidates(track: dict[str, Any], api_key: str, candidate_limit: int
     details = youtube_api_get(
         "videos",
         {"part": "snippet,contentDetails", "id": ",".join(video_ids)},
-        api_key,
+        keys,
     )
     found = {item.get("id"): item for item in details.get("items", [])}
     candidates: list[dict[str, Any]] = []
@@ -362,7 +452,7 @@ def discover(
     bundle_dir: Path,
     playlist_name: str,
     authorization: str,
-    api_key: str,
+    keys: YoutubeKeyPool,
     limit: int | None,
     candidate_limit: int,
     interactive: bool,
@@ -396,7 +486,7 @@ def discover(
         writer.writeheader()
         for index, track in enumerate(tracks, start=1):
             print(f"[{index}/{len(tracks)}] consultando {track['artist']} — {track['title']}")
-            candidates = youtube_candidates(track, api_key, candidate_limit)
+            candidates = youtube_candidates(track, keys, candidate_limit)
             selected = choose_candidate(track, candidates) if interactive else candidates[0] if auto_select and candidates else None
             if selected:
                 if auto_select:
@@ -462,74 +552,128 @@ def download(
     authorization: str,
     limit: int | None,
     retry: bool,
+    artwork_only: bool,
 ) -> None:
     require_playlist_authorization(playlist_name, authorization)
     manifest = read_manifest(bundle_dir)
     playlist = selected_playlist(manifest, playlist_name)
     sources = read_sources(sources_path)
     audio_dir = bundle_dir / "audio"
+    artwork_dir = bundle_dir / "artwork"
     audio_dir.mkdir(exist_ok=True)
-    candidates = []
-    for key in playlist["trackKeys"]:
-        track = manifest["tracks"][key]
-        url = sources.get(key)
-        if not url or (track.get("status") == "downloaded" and not retry):
-            continue
-        candidates.append((key, url))
+    artwork_dir.mkdir(exist_ok=True)
+    candidates = download_candidates(bundle_dir, playlist, manifest, sources, retry, artwork_only)
     if limit is not None:
         candidates = candidates[:limit]
     if not candidates:
-        print(f"Nenhuma faixa pendente com URL preenchida em: {playlist['name']}")
+        scope = "capa pendente" if artwork_only else "faixa pendente"
+        print(f"Nenhuma {scope} com URL preenchida em: {playlist['name']}")
         return
     try:
         import yt_dlp
     except ImportError as error:
         raise RuntimeError("yt-dlp indisponível; execute este script com uv run") from error
     print(f"Playlist autorizada: {playlist['name']} ({len(candidates)} faixas pendentes)")
-    for index, (key, source_url) in enumerate(candidates, start=1):
+    cookie_file = local_cookie_file()
+    if cookie_file:
+        print("Usando arquivo local de cookies do YouTube.")
+    for index, (key, source_url, artwork_only) in enumerate(candidates, start=1):
         if not allowed_source_url(source_url):
             print(f"[{index}/{len(candidates)}] ignorada URL não HTTPS para {key}", file=sys.stderr)
             continue
         output_template = str(audio_dir / f"{key}.%(ext)s")
-        options = {
-            "format": "bestaudio[ext=m4a]/bestaudio/best",
-            "outtmpl": output_template,
-            "noplaylist": True,
-            "no_warnings": False,
-            "quiet": False,
-            "writethumbnail": False,
-            "addmetadata": True,
-        }
-        print(f"[{index}/{len(candidates)}] baixando {manifest['tracks'][key]['artist']} — {manifest['tracks'][key]['title']}")
+        options = youtube_download_options(output_template, cookie_file)
+        action = "baixando capa" if artwork_only else "baixando áudio e capa"
+        print(f"[{index}/{len(candidates)}] {action}: {manifest['tracks'][key]['artist']} — {manifest['tracks'][key]['title']}")
         try:
             with yt_dlp.YoutubeDL(options) as ydl:
-                info = ydl.extract_info(source_url, download=True)
-                filename = Path(ydl.prepare_filename(info))
-            matches = sorted(audio_dir.glob(f"{key}.*"), key=lambda path: path.stat().st_mtime, reverse=True)
-            if not matches:
-                raise RuntimeError(f"arquivo final ausente (último nome previsto: {filename.name})")
+                info = ydl.extract_info(source_url, download=not artwork_only)
             track = manifest["tracks"][key]
-            track["file"] = str(matches[0].relative_to(bundle_dir))
+            if not artwork_only:
+                filename = Path(ydl.prepare_filename(info))
+                matches = sorted(
+                    (path for path in audio_dir.glob(f"{key}.*") if path.suffix.lower() not in IMAGE_EXTENSIONS),
+                    key=lambda path: path.stat().st_mtime,
+                    reverse=True,
+                )
+                if not matches:
+                    raise RuntimeError(f"arquivo final ausente (último nome previsto: {filename.name})")
+                track["file"] = str(matches[0].relative_to(bundle_dir))
+                track["status"] = "downloaded"
+            artwork = download_artwork(info.get("thumbnail"), artwork_dir, key)
+            if artwork:
+                track["artwork"] = str(artwork.relative_to(bundle_dir))
             track["source_url"] = source_url
-            track["status"] = "downloaded"
             write_json(bundle_dir / MANIFEST_NAME, manifest)
         except Exception as error:  # yt-dlp expõe diferentes tipos por versão
-            manifest["tracks"][key]["status"] = "failed"
-            manifest["tracks"][key]["source_url"] = source_url
-            write_json(bundle_dir / MANIFEST_NAME, manifest)
+            if not artwork_only:
+                manifest["tracks"][key]["status"] = "failed"
+                manifest["tracks"][key]["source_url"] = source_url
+                write_json(bundle_dir / MANIFEST_NAME, manifest)
             print(f"falhou para {key}: {error}", file=sys.stderr)
+
+
+def download_candidates(
+    bundle_dir: Path,
+    playlist: dict[str, Any],
+    manifest: dict[str, Any],
+    sources: dict[str, str],
+    retry: bool,
+    artwork_only: bool,
+) -> list[tuple[str, str, bool]]:
+    candidates = []
+    for key in playlist["trackKeys"]:
+        track = manifest["tracks"][key]
+        url = sources.get(key)
+        has_audio = track.get("status") == "downloaded" and bool(track.get("file"))
+        has_artwork = bool(track.get("artwork")) and (bundle_dir / track["artwork"]).is_file()
+        if artwork_only:
+            if url and has_audio and (retry or not has_artwork):
+                candidates.append((key, url, True))
+        elif url and (retry or not (has_audio and has_artwork)):
+            candidates.append((key, url, has_audio and not retry))
+    return candidates
+
+
+def download_artwork(url: str | None, artwork_dir: Path, key: str) -> Path | None:
+    """Baixa a thumbnail HTTPS indicada pelo yt-dlp com limite de tamanho."""
+    if not url or urlparse(url).scheme != "https":
+        return None
+    request = Request(url, headers={"User-Agent": "Rigbyfy bundle importer"})
+    try:
+        with urlopen(request, timeout=30) as response:
+            data = response.read(MAX_ARTWORK_BYTES + 1)
+            content_type = response.headers.get_content_type().lower()
+    except (HTTPError, URLError, TimeoutError) as error:
+        print(f"capa indisponível para {key}: {error}", file=sys.stderr)
+        return None
+    if len(data) > MAX_ARTWORK_BYTES:
+        print(f"capa ignorada para {key}: maior que 10 MiB", file=sys.stderr)
+        return None
+    suffix = IMAGE_EXTENSIONS_BY_MIME.get(content_type, Path(urlparse(url).path).suffix.lower())
+    if suffix not in IMAGE_EXTENSIONS:
+        print(f"capa ignorada para {key}: formato não suportado ({content_type})", file=sys.stderr)
+        return None
+    destination = artwork_dir / f"{key}{suffix}"
+    temporary = destination.with_suffix(f"{suffix}.tmp")
+    temporary.write_bytes(data)
+    temporary.replace(destination)
+    return destination
 
 
 def verify(bundle_dir: Path) -> None:
     manifest = read_manifest(bundle_dir)
-    downloaded = missing = 0
+    downloaded = missing = artwork = 0
     for track in manifest["tracks"].values():
         file_value = track.get("file")
         if file_value and (bundle_dir / file_value).is_file():
             downloaded += 1
+            artwork_value = track.get("artwork")
+            if artwork_value and (bundle_dir / artwork_value).is_file():
+                artwork += 1
         else:
             missing += 1
-    print(f"Arquivos disponíveis: {downloaded} | pendentes/falhos: {missing}")
+    print(f"Áudios disponíveis: {downloaded} | com capa: {artwork} | pendentes/falhos: {missing}")
 
 
 def push(bundle_dir: Path, serial: str | None) -> None:
@@ -537,9 +681,14 @@ def push(bundle_dir: Path, serial: str | None) -> None:
     command = ["adb"]
     if serial:
         command.extend(["-s", serial])
-    command.extend(["push", str(bundle_dir), "/sdcard/Download/"])
+    command.extend(["shell", "mkdir", "-p", ANDROID_BUNDLE_DIRECTORY])
     subprocess.run(command, check=True)
-    print("Bundle enviado para /sdcard/Download/Rigbyfy-import")
+    command = ["adb"]
+    if serial:
+        command.extend(["-s", serial])
+    command.extend(["push", f"{bundle_dir}/.", f"{ANDROID_BUNDLE_DIRECTORY}/"])
+    subprocess.run(command, check=True)
+    print(f"Bundle enviado para {ANDROID_BUNDLE_DIRECTORY}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -555,11 +704,12 @@ def parse_args() -> argparse.Namespace:
     download_parser.add_argument("--authorize", required=True, help="repita exatamente o nome da playlist como confirmação")
     download_parser.add_argument("--limit", type=int)
     download_parser.add_argument("--retry", action="store_true", help="tenta novamente faixas já marcadas como baixadas")
+    download_parser.add_argument("--artwork-only", action="store_true", help="baixa somente capas de áudios já disponíveis")
     discover_parser = commands.add_parser("discover", help="gera candidatos do YouTube para revisão manual")
     discover_parser.add_argument("--bundle-dir", type=Path, default=Path(__file__).parent / "Rigbyfy-import")
     discover_parser.add_argument("--playlist", required=True, help="nome da playlist a consultar")
     discover_parser.add_argument("--authorize", required=True, help="repita exatamente o nome da playlist como confirmação")
-    discover_parser.add_argument("--api-key", default=os.environ.get("YOUTUBE_API_KEY"), help="chave da YouTube Data API; prefira YOUTUBE_API_KEY")
+    discover_parser.add_argument("--api-key", help="uma ou mais chaves separadas por vírgula; substitui as chaves do ambiente")
     discover_parser.add_argument("--limit", type=int, default=10, help="máximo de faixas nesta execução (padrão: 10)")
     discover_parser.add_argument("--candidate-limit", type=int, default=3, choices=range(1, 6), help="candidatos por faixa (1 a 5)")
     discover_parser.add_argument("--interactive", action="store_true", help="escolhe candidatos no terminal e atualiza sources.csv")
@@ -588,15 +738,17 @@ def main() -> int:
                 args.authorize,
                 args.limit,
                 args.retry,
+                args.artwork_only,
             )
         elif args.command == "discover":
-            if not args.api_key:
-                raise ValueError("informe uma chave via YOUTUBE_API_KEY ou --api-key")
+            keys = configured_youtube_keys(args.api_key)
+            if not keys:
+                raise ValueError("informe YOUTUBE_API_KEY, YOUTUBE_API_KEY1… ou --api-key")
             discover(
                 args.bundle_dir,
                 args.playlist,
                 args.authorize,
-                args.api_key,
+                YoutubeKeyPool(keys),
                 args.limit,
                 args.candidate_limit,
                 args.interactive,
