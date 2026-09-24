@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # Second step, right after checkout. In async mode credentials are
+      # issued in the background during checkout and exported here.
+      - name: Configure credentials
+        uses: tracebit-com/tracebit-community-action@904ee3a84578e3b19bcd0e8c9354051fe148d51e # v1.3.0
+        with:
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+
+      # Your normal build steps follow - the canary credentials are now live
+      - run: npm ci
+      - run: npm test
